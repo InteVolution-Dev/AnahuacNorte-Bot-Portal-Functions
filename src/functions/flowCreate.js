@@ -5,7 +5,7 @@ const addFormats = require("ajv-formats");
 // Local imports
 const { badRequest, created } = require("../utils/response");
 const schema = require("../schemas/flowCreate.schema");
-const { buildFunctionToolFromOpenAPI } = require("../services/flows/flowBuilder");
+const { createFlow } = require("../services/flows/foundryToolManager.js");
 
 // AJV setup
 const ajv = new Ajv({ allErrors: true });
@@ -20,20 +20,16 @@ app.http("flowCreate", {
     authLevel: "anonymous",
 
     handler: async (req, context) => {
+        // Validate request body
         const body = await req.json();
-
         const valid = validate(body);
-
         if (!valid) {
             return badRequest("INVALID_PAYLOAD", {
                 errors: validate.errors,
             });
         }
-
-        // ...guardar en Table Storage, etc.
-        const { functionTool, serviceProperties } = buildFunctionToolFromOpenAPI(
-            
-        )
-        return created({ id: "flow-x" });
+        // Call the main functionality
+        const response = await createFlow(body);
+        return created(response);
     },
 });
