@@ -26,7 +26,13 @@ async function listFlows() {
                     entity.active === "true" ||
                     entity.active === "1" ||
                     entity.active === 1,
-                updatedAt: entity.updatedAt ?? null
+                updatedAt: entity.updatedAt ?? null,
+                paths: entity.payloadJson
+                    ? JSON.parse(entity.payloadJson).paths
+                    : {},
+                components: entity.payloadJson
+                    ? JSON.parse(entity.payloadJson).components
+                    : {},
             });
         }
 
