@@ -2,6 +2,18 @@
 const { TableClient } = require("@azure/data-tables");
 
 
+//  Función para obtener un cliente de tabla de Azure Table Storage
+function getTableClient(tableName) {
+    const connectionString = process.env.STORAGE_CONN;
+
+    if (!connectionString) {
+        throw new Error("Missing STORAGE_CONN in environment variables.");
+    }
+
+    return TableClient.fromConnectionString(connectionString, tableName);
+}
+
+
 // Función para almacenar una entidad en Table Storage
 async function storeInTable(storeDataObject){
     const tableName = storeDataObject.tableName;
@@ -50,6 +62,7 @@ async function deleteFromTableByTitle({ tableName, title }) {
 
 module.exports = { 
     storeInTable,
+    getTableClient,
     deleteFromTable,
     deleteFromTableByTitle
 };
