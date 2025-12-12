@@ -10,9 +10,11 @@ async function saveFlowToTableStorage(body){
             PartitionKey: "flows",
             RowKey: crypto.randomUUID(),   // o shortid
             title: body.info?.title ?? "",
+            description: body.info?.description ?? "No hay descripción",
             version: body.info?.version ?? "",
             active: Boolean(body.active),
             createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             payloadJson: JSON.stringify(body) 
         };
         const storedFlow = await storeInTable({

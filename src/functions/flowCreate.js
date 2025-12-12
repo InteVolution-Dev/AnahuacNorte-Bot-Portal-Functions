@@ -1,19 +1,22 @@
-// Third party imports
+// Azure Functions setup
 const { app } = require("@azure/functions");
+// Third party imports
 const Ajv = require("ajv");
 const addFormats = require("ajv-formats");
 // Local imports
 const { badRequest, created } = require("../utils/response");
-const schema = require("../schemas/flowCreate.schema");
 const { createFlow } = require("../services/flows/createFlow.js");
+const schema = require("../schemas/flowCreate.schema");
 
-// AJV setup
+
+// AJV setup ========================================
 const ajv = new Ajv({ allErrors: true });
 addFormats(ajv);
 
 const validate = ajv.compile(schema);
 
-// Define the Azure Function
+
+// Define the Azure Function ========================
 app.http("flowCreate", {
     route: "create-flow",
     methods: ["POST"],
