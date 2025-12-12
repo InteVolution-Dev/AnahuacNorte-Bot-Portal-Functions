@@ -1,6 +1,55 @@
+// Azure libraries
 const { TableClient } = require("@azure/data-tables");
 
 
-async function storeInTable(){
-    return;
-} 
+// Función para almacenar una entidad en Table Storage
+async function storeInTable(storeDataObject){
+    const tableName = storeDataObject.tableName;
+    const connectionString = process.env.STORAGE_CONN;
+    const entity = storeDataObject.entity;
+
+    const tableClient = TableClient.fromConnectionString(connectionString, tableName);
+    await tableClient.createTable();  // Crear la tabla si no existe, no truena si ya existe
+    await tableClient.createEntity(entity);  // Insertamos la entidad
+
+    return entity;
+}
+
+
+// Función para eliminar una entidad de Table Storage
+async function deleteFromTable({ tableName, rowKey }) {
+    const client = TableClient.fromConnectionString(process.env.STORAGE_CONN, tableName);
+
+    await client.deleteEntity("flows", rowKey);
+
+    return { deleted: true };
+}
+
+
+// Función para eliminar entidades de Table Storage por título
+async function deleteFromTableByTitle({ tableName, title }) {
+    const client = TableClient.fromConnectionString(process.env.STORAGE_CONN, tableName);
+
+    // Listar entidades que coincidan con title
+    const entities = client.listEntities({
+        queryOptions: {
+            filter: `PartitionKey eq 'flows' and title eq '${title}'`
+        }
+    });
+
+    let deletedCount = 0;
+
+    for await (const entity of entities) {
+        await client.deleteEntity(entity.partitionKey, entity.rowKey);
+        deletedCount++;
+    }
+
+    return { deletedCount };
+}
+
+
+module.exports = { 
+    storeInTable,
+    deleteFromTable,
+    deleteFromTableByTitle
+};

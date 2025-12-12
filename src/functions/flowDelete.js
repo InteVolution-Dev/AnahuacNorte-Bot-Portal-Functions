@@ -3,9 +3,9 @@ const { app } = require("@azure/functions");
 const Ajv = require("ajv");
 const addFormats = require("ajv-formats");
 // Local imports
-const { badRequest, created } = require("../utils/response");
-const schema = require("../schemas/flowCreate.schema");
-const { createFlow } = require("../services/flows/createFlow.js");
+const { badRequest, ok } = require("../utils/response");
+const schema = require("../schemas/flowDelete.schema");
+const { deleteFlow } = require("../services/flows/deleteFlow.js");
 
 // AJV setup
 const ajv = new Ajv({ allErrors: true });
@@ -14,9 +14,9 @@ addFormats(ajv);
 const validate = ajv.compile(schema);
 
 // Define the Azure Function
-app.http("flowCreate", {
-    route: "create-flow",
-    methods: ["POST"],
+app.http("flowDelete", {
+    route: "delete-flow",
+    methods: ["DELETE"],
     authLevel: "anonymous",
 
     handler: async (req, context) => {
@@ -29,7 +29,7 @@ app.http("flowCreate", {
             });
         }
         // Call the main functionality
-        const response = await createFlow(body);
-        return created(response);
+        const response = await deleteFlow(body);
+        return ok(response);
     },
 });

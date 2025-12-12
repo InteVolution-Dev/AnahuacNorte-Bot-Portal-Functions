@@ -1,8 +1,6 @@
 // Third party imports
 const { DefaultAzureCredential } = require("@azure/identity");
 const { AIProjectClient } = require("@azure/ai-projects");
-// Local imports
-const { storeInTable } = require("../storage/storage");
 
 
 // Configuración del cliente de Foundry y Table Storage
@@ -15,8 +13,8 @@ async function getFoundryAgent(){
     try {
         // Obtener Assistant API Agent
         const retrievedAgent = await projectClient.agents.getAgent(process.env.FOUNDRY_ASSISTANT_ID);
-        console.log("[DEBUG] Agente recuperado:", JSON.stringify(retrievedAgent , null, 2));
-        return retrievedAgent ;
+        // console.log("[DEBUG] Agente recuperado:", JSON.stringify(retrievedAgent , null, 2));
+        return retrievedAgent;
 
     } catch (err) {
         console.error("ERROR AL RECUPERAR AGENTE:");
@@ -26,6 +24,7 @@ async function getFoundryAgent(){
 }
 
 
+// Configuración del cliente de Foundry
 async function registerOpenAPITool(agent, openapiJson){
     try {
         // Primero tengo que limpiar el JSON de OpenAPI
@@ -59,24 +58,39 @@ async function registerOpenAPITool(agent, openapiJson){
 }
 
 
-async function saveFlowToTableStorage(){
-    await storeInTable();
-    return;
+// Función para eliminar una herramienta (tool) OpenAPI de un agente en Foundry
+async function deleteOpenAPITool(agent, toolName){
+    try {
+        // tool = flow
+        const currentTools = agent.tools || [];
+
+        // filtrar la tool a eliminar
+        const newTools = currentTools.filter(t => {
+            return !(t.type === "openapi" && t.openapi?.name === toolName);
+        });
+
+        if (newTools.length === currentTools.length) {
+            console.warn(`[WARN] Tool ${toolName} no existe en el agente.`);
+            return agent; // sin cambios
+        }
+
+        const updated = await projectClient.agents.updateAgent(agent.id, {
+            tools: newTools
+        });
+
+        console.log(`[INFO] Tool '${toolName}' eliminada del agente.`);
+        return updated;
+
+    } catch (err) {
+        console.error("ERROR AL ELIMINAR HERRAMIENTA OPENAPI:");
+        console.error(err);
+        throw err;
+    }
 }
 
-
-// Funcion principal para crear un Flow a partir de un OpenAPI JSON
-async function createFlow(body){
-    // Primero obtenemos el proyecto de Foundry
-    const agent = await getFoundryAgent();
-    // Ahora persistimos el nuevo flujo en el cliente de Foundry
-    await registerOpenAPITool(agent, body);
-    // Luego guardamos el Flow en Table Storage
-    // await saveFlowToTableStorage();
-    // Deberíamos devolver en la respuesta el objeto almacenado en la tabla junto con su ID y un status de creado si todo salió bien
-    return agent;
-}
 
 module.exports = {
-    createFlow,
+    getFoundryAgent,
+    deleteOpenAPITool,
+    registerOpenAPITool
 };
