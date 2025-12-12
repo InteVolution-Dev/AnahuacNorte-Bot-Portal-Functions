@@ -18,7 +18,7 @@ async function listFlows() {
         for await (const entity of iterator) {
             console.log(`[DEBUG] Entidad recuperada: ${JSON.stringify(entity, null, 2)}`);
             flows.push({
-                id: entity.RowKey,
+                id: entity.rowKey,
                 name: entity.title ?? null,
                 description: entity.description ?? null,
                 active:
