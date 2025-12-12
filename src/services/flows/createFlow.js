@@ -1,0 +1,50 @@
+// Local imports
+const { storeInTable } = require("../storage/storage.js");
+const { getFoundryAgent, registerOpenAPITool } = require("../foundry/foundryAgentManagerTool.js");
+
+
+// Funcion que guarda el Flow en Table Storage dándole un formato útil para futuras consultas
+async function saveFlowToTableStorage(body){
+    try {
+        const entity = {
+            PartitionKey: "flows",
+            RowKey: crypto.randomUUID(),   // o shortid
+            title: body.info?.title ?? "",
+            version: body.info?.version ?? "",
+            active: Boolean(body.active),
+            createdAt: new Date().toISOString(),
+            payloadJson: JSON.stringify(body) 
+        };
+        const storedFlow = await storeInTable({
+            tableName: process.env.FLOWS_TABLE_NAME,
+            connectionString: process.env.STORAGE_CONN,
+            entity: entity
+        });
+        return storedFlow;
+    } catch (err) {
+        console.error("ERROR AL GUARDAR FLOW EN TABLE STORAGE:");
+        console.error(err);
+        throw err;
+    }
+}
+
+
+// Funcion principal para crear un Flow a partir de un OpenAPI JSON
+async function createFlow(body){
+    // Primero obtenemos el proyecto de Foundry
+    const agent = await getFoundryAgent();
+    // Ahora persistimos el nuevo flujo en el cliente de Foundry
+    const updatedAgent = await registerOpenAPITool(agent, body);
+    // Luego guardamos el Flow en Table Storage
+    const storedFlow = await saveFlowToTableStorage(body);
+    console.log("[DEBUG] Flow almacenado en Table Storage:", JSON.stringify(storedFlow, null, 2));
+    // Deberíamos devolver en la respuesta el objeto almacenado en la tabla incluyendo su RowKey
+    const rowKey = storedFlow.RowKey;
+    updatedAgent.storedFlowRowKey = rowKey;
+    console.log("[DEBUG] Agente actualizado tras añadir la herramienta:", JSON.stringify(updatedAgent, null, 2));
+    return updatedAgent;
+}
+
+module.exports = {
+    createFlow,
+};
