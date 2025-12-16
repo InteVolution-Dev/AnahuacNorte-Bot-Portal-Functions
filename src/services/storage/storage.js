@@ -24,6 +24,9 @@ async function storeInTable({ tableName, entity, mode = "insert" }) {
     if (mode === "replace") {
         console.log("[DEBUG] Replacing entity in Table Storage:", entity);
         await tableClient.updateEntity(entity, "Replace");  // Actualizamos la entidad existente
+    } else if (mode === "merge") {
+        console.log("[DEBUG] Merging entity in Table Storage:", entity);
+        await tableClient.updateEntity(entity, "Merge");  // Hacemos merge de la entidad existente
     } else {
         // Por defecto hacemos un insert
         await tableClient.createEntity(entity);  // Insertamos la entidad
