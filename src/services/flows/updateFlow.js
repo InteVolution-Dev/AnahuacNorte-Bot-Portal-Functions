@@ -5,22 +5,32 @@ const { storeInTable } = require("../storage/storage");
 
 // Funciones auxiliares para actualizar el Flow en Table Storage
 async function saveUpdatedFlowToTableStorage(body) {
-    const entity = {
-        partitionKey: "flows",
-        rowKey: body.storedFlowRowKey,
-        title: body.openApiJson.info.title,
-        description: body.openApiJson.info.description,
-        version: body.openApiJson.info.version,
-        active: Boolean(body.openApiJson.active),
-        updatedAt: new Date().toISOString(),
-        payloadJson: JSON.stringify(body.openApiJson)
-    };
+    try {
+        const cleanedPayloadJson = { ...body.openApiJson };
+        delete cleanedPayloadJson.active; // eliminamos active del payload JSON
 
-    await storeInTable({
-        tableName: process.env.FLOWS_TABLE_NAME,
-        entity,
-        mode: "replace" // Si no especificamos, por defecto hace insert
-    });
+        const entity = {
+            partitionKey: "flows",
+            rowKey: body.storedFlowRowKey,
+            title: body.openApiJson.info.title,
+            baseUrl: body.openApiJson.servers?.[0]?.url ?? "",
+            description: body.openApiJson.info.description,
+            version: body.openApiJson.info.version,
+            active: Boolean(body.openApiJson.active),
+            updatedAt: new Date().toISOString(),
+            payloadJson: JSON.stringify(cleanedPayloadJson)
+        };
+
+        await storeInTable({
+            tableName: process.env.FLOWS_TABLE_NAME,
+            entity,
+            mode: "merge" // Si no especificamos, por defecto hace insert
+        });
+    } catch (err) {
+        console.error("ERROR AL GUARDAR FLOW ACTUALIZADO EN TABLE STORAGE:");
+        console.error(err);
+        throw err;
+    }
 }
 
 // Función principal para actualizar un Flow a partir de un OpenAPI JSON

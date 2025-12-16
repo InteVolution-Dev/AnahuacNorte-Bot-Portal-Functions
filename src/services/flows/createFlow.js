@@ -24,16 +24,20 @@ function sanitizeEntity(entity) {
 // Funcion que guarda el Flow en Table Storage dándole un formato útil para futuras consultas
 async function saveFlowToTableStorage(body) {
     try {
+        const cleanedPayloadJson = { ...body };
+        delete cleanedPayloadJson.active; // eliminamos active del payload JSON
+
         const rawEntity = {
-            PartitionKey: "flows",
-            RowKey: crypto.randomUUID(), // o shortid
+            partitionKey: "flows",
+            rowKey: crypto.randomUUID(), // o shortid
             title: body.info?.title ?? "",
             description: body.info?.description ?? "No hay descripción",
             version: body.info?.version ?? "",
             active: Boolean(body.active),
+            baseUrl: body.servers?.[0]?.url ?? "", 
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            payloadJson: JSON.stringify(body),
+            payloadJson: JSON.stringify(cleanedPayloadJson),
         };
         console.log("[DEBUG] Guardando Flow en Table Storage:", rawEntity);
         const entity = sanitizeEntity(rawEntity);
@@ -53,6 +57,7 @@ async function saveFlowToTableStorage(body) {
 async function createFlow(body) {
     // Primero obtenemos el proyecto de Foundry
     const agent = await getFoundryAgent();
+    console.log("[DEBUG] Agente de Foundry obtenido:", JSON.stringify(agent, null, 2));
     // Ahora persistimos el nuevo flujo en el cliente de Foundry
     const updatedAgent = await registerOpenAPITool(agent, body);
     // Luego guardamos el Flow en Table Storage

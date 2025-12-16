@@ -21,6 +21,7 @@ async function listFlows() {
                 id: entity.rowKey,
                 name: entity.title ?? null,
                 description: entity.description ?? null,
+                baseUrl: entity.baseUrl ?? null,
                 active:
                     entity.active === true ||
                     entity.active === "true" ||
