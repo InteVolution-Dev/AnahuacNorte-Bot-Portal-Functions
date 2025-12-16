@@ -79,6 +79,34 @@ module.exports = {
                                         },
                                     },
                                 },
+                                parameters: {
+                                    type: "array",
+                                    items: {
+                                        type: "object",
+                                        required: ["name", "in", "schema"],
+                                        properties: {
+                                            name: { type: "string" },
+                                            in: {
+                                                type: "string",
+                                                enum: ["path", "query", "header", "cookie"]
+                                            },
+                                            required: { type: "boolean" },
+                                            description: { type: "string" },
+                                            schema: {
+                                                type: "object",
+                                                required: ["type"],
+                                                properties: {
+                                                    type: {
+                                                        type: "string",
+                                                        enum: ["string", "number", "integer", "boolean"]
+                                                    }
+                                                },
+                                                additionalProperties: true
+                                            }
+                                        },
+                                        additionalProperties: false
+                                    }
+                                },
                                 responses: {
                                     type: "object",
                                     minProperties: 1,
@@ -120,21 +148,35 @@ module.exports = {
             properties: {
                 securitySchemes: {
                     type: "object",
-                    properties: {
-                        ApiKeyAuth: {
+                    minProperties: 1,
+                    additionalProperties: false,
+                    patternProperties: {
+                        "^[a-zA-Z0-9_]+$": {
                             type: "object",
-                            required: ["type", "in", "name"],
+                            required: ["type"],
                             properties: {
-                                type: { type: "string" },
-                                in: { type: "string" },
+                                type: {
+                                    type: "string",
+                                    enum: ["apiKey", "http"],
+                                },
+                                in: {
+                                    type: "string",
+                                    enum: ["header", "query"],
+                                },
                                 name: { type: "string" },
+                                scheme: {
+                                    type: "string",
+                                    enum: ["bearer"],
+                                },
+                                value: { type: "string" },
                             },
+                            additionalProperties: false,
                         },
                     },
                 },
             },
-            additionalProperties: false
+            additionalProperties: false,
         },
     },
-    additionalProperties: false
+    additionalProperties: false,
 };
