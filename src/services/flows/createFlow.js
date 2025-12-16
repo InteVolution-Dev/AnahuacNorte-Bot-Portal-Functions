@@ -17,11 +17,10 @@ async function saveFlowToTableStorage(body){
             updatedAt: new Date().toISOString(),
             payloadJson: JSON.stringify(body) 
         };
-        const storedFlow = await storeInTable({
-            tableName: process.env.FLOWS_TABLE_NAME,
-            connectionString: process.env.STORAGE_CONN,
-            entity: entity
-        });
+        const storedFlow = await storeInTable(
+            process.env.FLOWS_TABLE_NAME,
+            entity
+        );
         return storedFlow;
     } catch (err) {
         console.error("ERROR AL GUARDAR FLOW EN TABLE STORAGE:");

@@ -89,8 +89,41 @@ async function deleteOpenAPITool(agent, toolName){
 }
 
 
+async function updateOpenAPITool(agent, body){
+    try {
+        // Reconstruir tool OpenAPI desde payload
+        const cleanedOpenApiJson = { ...body.openApiJson };
+        delete cleanedOpenApiJson.active;
+
+        const newTool = {
+            type: "openapi",
+            openapi: {
+                name: cleanedOpenApiJson.info.title,
+                description: cleanedOpenApiJson.info.description,
+                spec: cleanedOpenApiJson,
+                auth: { type: "anonymous" }
+            }
+        };
+
+        // 3. Reemplazar tool en Foundry
+        const filteredTools = (agent.tools || []).filter(t =>
+            !(t.type === "openapi" && t.openapi?.name === newTool.openapi.name)
+        );
+
+        const updatedAgent = await projectClient.agents.updateAgent(agent.id, {
+            tools: [...filteredTools, newTool]
+        });
+
+        return updatedAgent;
+    } catch(err) {
+        console.error("ERROR AL ACTUALIZAR HERRAMIENTA OPENAPI:");
+        console.error(err);
+        throw err;
+    }
+}
 module.exports = {
     getFoundryAgent,
     deleteOpenAPITool,
-    registerOpenAPITool
+    updateOpenAPITool,
+    registerOpenAPITool,
 };

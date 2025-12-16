@@ -14,18 +14,24 @@ function getTableClient(tableName) {
 }
 
 
-// Función para almacenar una entidad en Table Storage
-async function storeInTable(storeDataObject){
-    const tableName = storeDataObject.tableName;
+// Función para almacenar (o actualizar) una entidad en Table Storage
+async function storeInTable({ tableName, entity, mode = "insert" }) {
     const connectionString = process.env.STORAGE_CONN;
-    const entity = storeDataObject.entity;
 
     const tableClient = TableClient.fromConnectionString(connectionString, tableName);
     await tableClient.createTable();  // Crear la tabla si no existe, no truena si ya existe
-    await tableClient.createEntity(entity);  // Insertamos la entidad
+
+    if (mode === "replace") {
+        console.log("[DEBUG] Replacing entity in Table Storage:", entity);
+        await tableClient.updateEntity(entity, "Replace");  // Actualizamos la entidad existente
+    } else {
+        // Por defecto hacemos un insert
+        await tableClient.createEntity(entity);  // Insertamos la entidad
+    }
 
     return entity;
 }
+
 
 
 // Función para eliminar una entidad de Table Storage
