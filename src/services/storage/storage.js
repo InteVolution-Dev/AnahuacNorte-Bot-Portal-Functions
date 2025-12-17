@@ -11,7 +11,7 @@ function getTableClient(tableName) {
     }
 
     return TableClient.fromConnectionString(connectionString, tableName);
-}
+};
 
 
 // Función para almacenar (o actualizar) una entidad en Table Storage
@@ -33,9 +33,25 @@ async function storeInTable({ tableName, entity, mode = "insert" }) {
     }
 
     return entity;
-}
+};
 
 
+// Función para traer una entidad de Table Storage
+async function getFromTable({ tableName, rowKey }) {
+    try {
+        const client = TableClient.fromConnectionString(process.env.STORAGE_CONN, tableName);
+
+        const entity = await client.getEntity("flows", rowKey);
+        return entity;
+    } catch (err) {
+        console.error("[STORAGE] ERROR AL RECUPERAR ENTIDAD DE TABLE STORAGE:", {
+            tableName,
+            rowKey,
+            error: err.message
+        });
+        throw err;
+    }
+};
 
 // Función para eliminar una entidad de Table Storage
 async function deleteFromTable({ tableName, rowKey }) {
@@ -44,7 +60,7 @@ async function deleteFromTable({ tableName, rowKey }) {
     await client.deleteEntity("flows", rowKey);
 
     return { deleted: true };
-}
+};
 
 
 // Función para eliminar entidades de Table Storage por título
@@ -66,12 +82,13 @@ async function deleteFromTableByTitle({ tableName, title }) {
     }
 
     return { deletedCount };
-}
+};
 
 
 module.exports = { 
     storeInTable,
     getTableClient,
+    getFromTable,
     deleteFromTable,
     deleteFromTableByTitle
 };
