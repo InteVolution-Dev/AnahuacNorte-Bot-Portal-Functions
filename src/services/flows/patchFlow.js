@@ -1,4 +1,4 @@
-const { getFoundryAgent, updateOpenAPITool } = require("../foundry/foundryAgentManagerTool");
+const { getFoundryAgent, registerOpenAPITool, deleteOpenAPITool } = require("../foundry/foundryAgentManagerTool");
 const { storeInTable } = require("../storage/storage");
 
 
@@ -26,9 +26,41 @@ async function patchFlow(body) {
             throw new Error("rowKey (id) is required to update a flow");
         }
 
-        // 1. TODO: Obtener agente
+        // 0. Obtener el flow desde Table Storage
+        const storedFlow = await getFromTable({
+            tableName: process.env.FLOWS_TABLE_NAME,
+            rowKey: body.storedFlowRowKey
+        });
 
-        // 2. Actualizar entidad en Table Storage (UPSERT)
+        // 0.5 Parse el payloadJson del entity (flow almacenado)
+        let openApiJson;
+        try {
+            openApiJson = JSON.parse(storedFlow.payloadJson);
+        } catch {
+            throw new Error("Flujo almacenado tiene un payloadJson inválido");
+        }
+
+        // 1. Obtener agente
+        const agent = await getFoundryAgent();
+        console.log("[DEBUG] Agente de Foundry obtenido:", JSON.stringify(agent, null, 2));
+
+        // 2. Verificar si el Flow debe estar activo o no en Foundry
+        if (body.active) {
+            // 2.1 Registrar herramienta OpenAPI en Foundry
+            const updatedAgent = await registerOpenAPITool(agent, openApiJson);
+            console.log("[DEBUG] Agente actualizado con nueva herramienta OpenAPI:", JSON.stringify(updatedAgent, null, 2));
+        } else {
+            // 2.5 Eliminar herramienta OpenAPI previa si existe
+            const existingTool = (agent.tools || []).find(tool => tool.type === "openapi" && tool.openapi?.spec?.info?.title === openApiJson.info?.title);
+            if (!existingTool) {
+                console.log("[DEBUG] No se encontró herramienta OpenAPI previa para eliminar.");
+                throw new Error("No existe el flujo en la herramienta del agente.");
+            }
+            await deleteOpenAPITool(agent, openApiJson.info?.title);
+            console.log(`[DEBUG] Herramienta OpenAPI eliminada: ${existingTool.openapi.name}`);
+        }
+
+        // 3. Actualizar entidad en Table Storage (UPSERT)
         const updatedFlowInStorage = await savePatchedFlowToTableStorage(body);
 
         return {
@@ -38,8 +70,10 @@ async function patchFlow(body) {
         };
 
     } catch (err) {
-        console.error("ERROR AL ACTUALIZAR FLOW:");
-        console.error(err);
+        console.error("[PATCH FLOW] Failed", {
+            rowKey: body?.storedFlowRowKey,
+            message: err.message
+        });
         throw err;
     }
 }
