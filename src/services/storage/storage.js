@@ -88,6 +88,7 @@ async function deleteFromTableByTitle({ tableName, title }) {
 module.exports = { 
     storeInTable,
     getTableClient,
+    getFromTable,
     deleteFromTable,
     deleteFromTableByTitle
 };

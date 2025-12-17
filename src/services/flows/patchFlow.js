@@ -1,22 +1,28 @@
 const { getFoundryAgent, registerOpenAPITool, deleteOpenAPITool } = require("../foundry/foundryAgentManagerTool");
-const { storeInTable } = require("../storage/storage");
+const { storeInTable, getFromTable } = require("../storage/storage");
 
 
 
 // Funciones auxiliares para actualizar el Flow en Table Storage
 async function savePatchedFlowToTableStorage(body) {
-    const entity = {
-        partitionKey: "flows",
-        rowKey: body.storedFlowRowKey,
-        active: Boolean(body.active),
-        updatedAt: new Date().toISOString(),
-    };
+    try {
+        const entity = {
+            partitionKey: "flows",
+            rowKey: body.storedFlowRowKey,
+            active: Boolean(body.active),
+            updatedAt: new Date().toISOString(),
+        };
 
-    await storeInTable({
-        tableName: process.env.FLOWS_TABLE_NAME,
-        entity,
-        mode: "merge" // Si no especificamos, por defecto hace insert
-    });
+        await storeInTable({
+            tableName: process.env.FLOWS_TABLE_NAME,
+            entity,
+            mode: "merge" // Si no especificamos, por defecto hace insert
+        });
+    } catch (err) {
+        console.error("[STORE] ERROR AL ACTUALIZAR FLOW EN TABLE STORAGE:");
+        console.error(err);
+        throw err;
+    }
 }
 
 // Función principal para actualizar un Flow a partir de un OpenAPI JSON
@@ -61,7 +67,7 @@ async function patchFlow(body) {
         }
 
         // 3. Actualizar entidad en Table Storage (UPSERT)
-        const updatedFlowInStorage = await savePatchedFlowToTableStorage(body);
+        await savePatchedFlowToTableStorage(body);
 
         return {
             id: body.storedFlowRowKey,

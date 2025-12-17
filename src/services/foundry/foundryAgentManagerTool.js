@@ -89,6 +89,7 @@ async function deleteOpenAPITool(agent, toolName){
 }
 
 
+// Función para actualizar una herramienta (tool) OpenAPI de un agente en Foundry
 async function updateOpenAPITool(agent, body){
     try {
         // Reconstruir tool OpenAPI desde payload
@@ -121,6 +122,9 @@ async function updateOpenAPITool(agent, body){
         throw err;
     }
 }
+
+
+
 module.exports = {
     getFoundryAgent,
     deleteOpenAPITool,
