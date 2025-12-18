@@ -37,6 +37,7 @@ async function patchFlow(body) {
             tableName: process.env.FLOWS_TABLE_NAME,
             rowKey: body.storedFlowRowKey
         });
+        console.log("[DEBUG] Flow almacenado obtenido:", JSON.stringify(storedFlow, null, 2));
 
         // 0.5 Parse el payloadJson del entity (flow almacenado)
         let openApiJson;
@@ -57,7 +58,7 @@ async function patchFlow(body) {
             console.log("[DEBUG] Agente actualizado con nueva herramienta OpenAPI:", JSON.stringify(updatedAgent, null, 2));
         } else {
             // 2.5 Eliminar herramienta OpenAPI previa si existe
-            const existingTool = (agent.tools || []).find(tool => tool.type === "openapi" && tool.openapi?.spec?.info?.title === openApiJson.info?.title);
+            const existingTool = (agent.tools || []).find(tool => tool.type === "openapi" && tool.openapi?.name === openApiJson.info?.title);
             if (!existingTool) {
                 console.log("[DEBUG] No se encontró herramienta OpenAPI previa para eliminar.");
                 throw new Error("No existe el flujo en la herramienta del agente.");
@@ -76,8 +77,18 @@ async function patchFlow(body) {
         };
 
     } catch (err) {
+        const storedFlow = await getFromTable({
+            tableName: process.env.FLOWS_TABLE_NAME,
+            rowKey: body.storedFlowRowKey
+        });
+        if (!storedFlow.title) {
+            console.warn("[WARN] Flow sin title, reconstruyendo desde payloadJson");
+            const parsed = JSON.parse(storedFlow.payloadJson);
+            storedFlow.title = parsed.info?.title;
+        }
         console.error("[PATCH FLOW] Failed", {
             rowKey: body?.storedFlowRowKey,
+            flowName: storedFlow?.title,
             message: err.message
         });
         throw err;
