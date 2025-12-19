@@ -26,14 +26,18 @@ async function saveFlowToTableStorage(body) {
     try {
         const cleanedPayloadJson = { ...body };
         delete cleanedPayloadJson.active; // eliminamos active del payload JSON
-
+        // Contract:
+        // Foundry tool name === payloadJson.info.title
         const rawEntity = {
             partitionKey: "flows",
             rowKey: crypto.randomUUID(), // o shortid
             title: body.info?.title ?? "",
             description: body.info?.description ?? "No hay descripción",
             version: body.info?.version ?? "",
-            active: Boolean(body.active),
+            desiredActive: Boolean(body.active),
+            playgroundActive: true,
+            productionActive: false,
+            productionLastSyncedAt: null,
             baseUrl: body.servers?.[0]?.url ?? "", 
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
