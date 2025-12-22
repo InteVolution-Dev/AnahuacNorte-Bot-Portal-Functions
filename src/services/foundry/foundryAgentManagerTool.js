@@ -21,7 +21,7 @@ async function getFoundryAgent(){
         console.error(err);
         throw err;
     }
-}
+};
 
 
 // Configuración del cliente de Foundry
@@ -55,7 +55,7 @@ async function registerOpenAPITool(agent, openapiJson){
         console.error(err);
         throw err;
     }
-}
+};
 
 
 // Función para eliminar una herramienta (tool) OpenAPI de un agente en Foundry
@@ -86,7 +86,7 @@ async function deleteOpenAPITool(agent, toolName){
         console.error(err);
         throw err;
     }
-}
+};
 
 
 // Función para actualizar una herramienta (tool) OpenAPI de un agente en Foundry
@@ -121,11 +121,53 @@ async function updateOpenAPITool(agent, body){
         console.error(err);
         throw err;
     }
-}
+};
+
+
+async function configureAgent({agentId, indexId, openApiTools = []}){
+    if (!agentId ) {
+        throw new Error("agentId es requerido para configurar al agente.");
+    }
+
+    // Constuimos las OpenAPI tools
+    const tools = [];
+    for (const flow of openApiTools) {
+        tools.push({
+            type: "openapi",
+            openapi: {
+                name: flow.openApiJson.info?.title ?? "UnnamedOpenAPITool",
+                description: flow.openApiJson.info?.description ?? "OpenAPI specification",
+                spec: flow.openApiJson,
+                auth: {
+                    type: "anonymous"
+                }
+            }
+        });
+    }
+
+    // Agregar index si existe
+    if (indexId) {
+        tools.push({
+            type: "file_search",
+            file_search: {
+                vector_store_ids: [indexId]
+            }
+        });
+    }
+
+    // Update completo del agente
+    const updatedAgent = await projectClient.agents.updateAgent(agentId, {
+        tools
+    });
+
+    console.log(`[FOUNDY] Agent ${agentId} configured with ${tools.length} tools (index: ${Boolean(indexId)})`);
+    return updatedAgent;
+};
 
 
 
 module.exports = {
+    configureAgent,
     getFoundryAgent,
     deleteOpenAPITool,
     updateOpenAPITool,
