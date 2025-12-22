@@ -37,11 +37,10 @@ async function storeInTable({ tableName, entity, mode = "insert" }) {
 
 
 // Función para traer una entidad de Table Storage
-async function getFromTable({ tableName, rowKey }) {
+async function getFromTable({ tableName, partitionKey, rowKey }) {
     try {
         const client = TableClient.fromConnectionString(process.env.STORAGE_CONN, tableName);
-
-        const entity = await client.getEntity("flows", rowKey);
+        const entity = await client.getEntity(partitionKey, rowKey);
         return entity;
     } catch (err) {
         console.error("[STORAGE] ERROR AL RECUPERAR ENTIDAD DE TABLE STORAGE:", {
@@ -52,6 +51,29 @@ async function getFromTable({ tableName, rowKey }) {
         throw err;
     }
 };
+
+
+// Función para traer toda una tabla de Table Storage
+async function queryTable({ tableName, filter = "" }) {
+    const client = TableClient.fromConnectionString(
+        process.env.STORAGE_CONN,
+        tableName
+    );
+
+    const entities = [];
+    const iterator = client.listEntities({
+        queryOptions: {
+            filter,
+        },
+    });
+
+    for await (const entity of iterator) {
+        entities.push(entity);
+    }
+
+    return entities;
+};
+
 
 // Función para eliminar una entidad de Table Storage
 async function deleteFromTable({ tableName, rowKey }) {
@@ -85,7 +107,8 @@ async function deleteFromTableByTitle({ tableName, title }) {
 };
 
 
-module.exports = { 
+module.exports = {
+    queryTable, 
     storeInTable,
     getTableClient,
     getFromTable,

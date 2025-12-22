@@ -39,7 +39,7 @@ async function listFlows() {
 
         return {flows};
     } catch (err) {
-        context.log.error("Error in flowList:", err);
+        console.log.error("Error in flowList:", err);
 
         return {
             status: 500,

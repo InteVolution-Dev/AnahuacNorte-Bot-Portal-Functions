@@ -35,6 +35,7 @@ async function patchFlow(body) {
         // 0. Obtener el flow desde Table Storage
         const storedFlow = await getFromTable({
             tableName: process.env.FLOWS_TABLE_NAME,
+            partitionKey: process.env.FLOWS_PARTITION,
             rowKey: body.storedFlowRowKey
         });
         console.log("[DEBUG] Flow almacenado obtenido:", JSON.stringify(storedFlow, null, 2));
@@ -79,6 +80,7 @@ async function patchFlow(body) {
     } catch (err) {
         const storedFlow = await getFromTable({
             tableName: process.env.FLOWS_TABLE_NAME,
+            partitionKey: process.env.FLOWS_PARTITION,
             rowKey: body.storedFlowRowKey
         });
         if (!storedFlow.title) {
