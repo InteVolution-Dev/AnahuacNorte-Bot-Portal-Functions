@@ -60,7 +60,7 @@ async function saveFlowToTableStorage(body) {
 // Funcion principal para crear un Flow a partir de un OpenAPI JSON
 async function createFlow(body) {
     // Primero obtenemos el proyecto de Foundry
-    const agent = await getFoundryAgent();
+    const agent = await getFoundryAgent(getFoundryAgent);
     console.log("[DEBUG] Agente de Foundry obtenido:", JSON.stringify(agent, null, 2));
     // Ahora persistimos el nuevo flujo en el cliente de Foundry
     const updatedAgent = await registerOpenAPITool(agent, body);

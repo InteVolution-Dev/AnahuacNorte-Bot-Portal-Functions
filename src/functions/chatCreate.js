@@ -3,11 +3,12 @@ const { app } = require("@azure/functions");
 // Local imports
 const { ok, badRequest } = require("../utils/response");
 const { createChat } = require("../services/playground/playgroundManagerTool");
+const schema = require("../schemas/chatCreate.schema");
 
 
 // Define the Azure Function ========================
 app.http("create-chat", {
-    route: "playground/create-chat",
+    route: "playground/chats",
     methods: ["POST"],
     authLevel: "anonymous",
 
@@ -15,7 +16,8 @@ app.http("create-chat", {
         console.log("[CHAT CREATE] Create chat request received");
 
         try {
-            const result = await createChat(req.body);
+            const body = await req.json();
+            const result = await createChat(body);
             return ok(result);
         } catch (err) {
             console.log("[CHAT CREATE] Error during chat creation", err);

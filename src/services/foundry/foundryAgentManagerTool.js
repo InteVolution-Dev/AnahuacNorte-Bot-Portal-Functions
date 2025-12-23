@@ -8,16 +8,81 @@ const credential = new DefaultAzureCredential();
 const projectClient = new AIProjectClient(process.env.FOUNDRY_ENDPOINT, credential);
 
 
-// Funciones auxiliares
-async function getFoundryAgent(){
+// Funciones auxiliares. TODO: hacer que todas las llamadas a "getFoundryAgent" manden el foundryAssistantId
+async function getFoundryAgent(foundryAssistanId = process.env.FOUNDRY_ASSISTANT_ID){
     try {
         // Obtener Assistant API Agent
-        const retrievedAgent = await projectClient.agents.getAgent(process.env.FOUNDRY_ASSISTANT_ID);
+        const retrievedAgent = await projectClient.agents.getAgent(foundryAssistanId);
         // console.log("[DEBUG] Agente recuperado:", JSON.stringify(retrievedAgent , null, 2));
         return retrievedAgent;
 
     } catch (err) {
         console.error("ERROR AL RECUPERAR AGENTE:");
+        console.error(err);
+        throw err;
+    }
+};
+
+
+// Función para crear un hilo (para conversaciones)
+async function createAgentThread(){
+    try {
+        const thread = await projectClient.agents.threads.create();
+        return thread;
+    } catch (err) {
+        console.error("ERROR AL CREAR THREAD DE AGENTE:");
+        console.error(err);
+        throw err;
+    }
+};
+
+
+// Función para crear un mensaje dentro de un hilo de agente
+async function createAgentMessage(threadId, role, content){
+    try {
+        const message = await projectClient.agents.messages.create(threadId, role, content);
+        console.log(`Created message, ID: ${message.id}`);
+        return message;
+    } catch (err) {
+        console.error("ERROR AL CREAR MENSAJE DE AGENTE:");
+        console.error(err);
+        throw err;
+    }
+};
+
+
+// Functión para echar a correr una conversación (run) en un hilo de agente
+async function createAgentRun(threadId, agentId){
+    try {
+        let run = await projectClient.agents.runs.create(threadId, agentId);
+        console.log(`[DEBUG] Created run with ID: ${run.id} and initial status: ${run.status}`);
+        while (run.status === "queued" || run.status === "in_progress") {
+            // Wait for a second
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            run = await projectClient.agents.runs.get(threadId, run.id);
+            console.log(`[DEBUG] RE-SCAN Run status: ${run.status}`);
+        }
+
+        if (run.status === "failed") {
+            console.error(`Run failed: `, run.lastError);
+        }
+        
+        return run;
+    } catch (err) {
+        console.error("ERROR AL CREAR RUN DE AGENTE:");
+        console.error(err);
+        throw err;
+    }
+};
+
+
+// Función para desplegar los mensajes de un hilo de conversación
+async function retrieveAgentMessages(threadId){
+    try {
+        const messages = projectClient.agents.messages.list(threadId, { order: "asc" });
+        return messages;
+    } catch (err) {
+        console.error("ERROR AL RECUPERAR MENSAJES DE AGENTE:");
         console.error(err);
         throw err;
     }
@@ -172,4 +237,8 @@ module.exports = {
     deleteOpenAPITool,
     updateOpenAPITool,
     registerOpenAPITool,
+    createAgentThread,
+    createAgentMessage,
+    createAgentRun,
+    retrieveAgentMessages
 };
