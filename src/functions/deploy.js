@@ -19,7 +19,7 @@ app.http("deploy", {
 
             return ok(result);
         } catch (err) {
-            context.error("[DEPLOY] Error during deploy", err);
+            console.log("[DEPLOY] Error during deploy", err);
 
             return badRequest("FLOW_PATCH_FAILED", { message: err.message });
         }
