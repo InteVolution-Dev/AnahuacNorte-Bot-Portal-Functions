@@ -59,25 +59,31 @@ async function saveFlowToTableStorage(body) {
 
 // Funcion principal para crear un Flow a partir de un OpenAPI JSON
 async function createFlow(body) {
-    // Primero obtenemos el proyecto de Foundry
-    const agent = await getFoundryAgent();
-    console.log("[DEBUG] Agente de Foundry obtenido:", JSON.stringify(agent, null, 2));
-    // Ahora persistimos el nuevo flujo en el cliente de Foundry
-    const updatedAgent = await registerOpenAPITool(agent, body);
-    // Luego guardamos el Flow en Table Storage
-    const storedFlow = await saveFlowToTableStorage(body);
-    console.log(
-        "[DEBUG] Flow almacenado en Table Storage:",
-        JSON.stringify(storedFlow, null, 2)
-    );
-    // Deberíamos devolver en la respuesta el objeto almacenado en la tabla incluyendo su RowKey
-    const rowKey = storedFlow.rowKey;
-    updatedAgent.storedFlowRowKey = rowKey;
-    console.log(
-        "[DEBUG] Agente actualizado tras añadir la herramienta:",
-        JSON.stringify(updatedAgent, null, 2)
-    );
-    return updatedAgent;
+    try {
+        // Primero obtenemos el proyecto de Foundry
+        const agent = await getFoundryAgent();
+        console.log("[DEBUG] Agente de Foundry obtenido:", JSON.stringify(agent, null, 2));
+        // Ahora persistimos el nuevo flujo en el cliente de Foundry
+        const updatedAgent = await registerOpenAPITool(agent, body);
+        // Luego guardamos el Flow en Table Storage
+        const storedFlow = await saveFlowToTableStorage(body);
+        console.log(
+            "[DEBUG] Flow almacenado en Table Storage:",
+            JSON.stringify(storedFlow, null, 2)
+        );
+        // Deberíamos devolver en la respuesta el objeto almacenado en la tabla incluyendo su RowKey
+        const rowKey = storedFlow.rowKey;
+        updatedAgent.storedFlowRowKey = rowKey;
+        console.log(
+            "[DEBUG] Agente actualizado tras añadir la herramienta:",
+            JSON.stringify(updatedAgent, null, 2)
+        );
+        return updatedAgent;
+    } catch (err) {
+        console.error("ERROR EN CREATE FLOW:");
+        console.error(err);
+        throw err;
+    }
 }
 
 module.exports = {
