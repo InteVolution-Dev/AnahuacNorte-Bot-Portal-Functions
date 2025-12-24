@@ -35,7 +35,7 @@ async function getOpenAIClient() {
 }
 
 
-// Función para
+// Función para crear una nueva conversación
 async function createNewConversation(openAIClient, userMessage) {
     try {
         // Create conversation with initial user message
@@ -82,6 +82,35 @@ async function createResponseInConversation(openAIClient, conversationId, userMe
 };
 
 
+async function buildOpenApiTool(openApiJson) {
+    const cleaned = { ...openApiJson };
+    delete cleaned.active;
+
+    return {
+        type: "openapi",
+        openapi: {
+            name: cleaned.info?.title,
+            description: cleaned.info?.description,
+            spec: cleaned,
+            auth: { type: "anonymous" }
+        }
+    };
+}
+
+
+async function updateAgentDefinition(agentName, definition) {
+    try {
+        return await projectClient.agents.update(agentName, definition);
+    } catch (err) {
+        console.error("ERROR AL ACTUALIZAR DEFINICIÓN DEL AGENTE:");
+        console.error(err);
+        throw err;
+    }
+}
+
+/** 
+    * @deprecated
+*/
 // Configuración del cliente de Foundry
 async function registerOpenAPITool(agent, openapiJson) {
     try {
@@ -238,8 +267,9 @@ module.exports = {
     getOpenAIClient,
     createNewConversation,
     createResponseInConversation,
+    buildOpenApiTool,
+    updateAgentDefinition,
     configureAgent,
     deleteOpenAPITool,
     updateOpenAPITool,
-    registerOpenAPITool,
 };
