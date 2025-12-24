@@ -1,12 +1,12 @@
-// Azure Functions setup
+// Azure Functions imports
 const { app } = require("@azure/functions");
 // Third party imports
 const Ajv = require("ajv");
 const addFormats = require("ajv-formats");
 // Local imports
-const { badRequest, ok } = require("../utils/response");
-const { deleteFlow } = require("../services/flows/deleteFlow.js");
-const schema = require("../schemas/flowDelete.schema");
+const { ok, badRequest } = require("../utils/response");
+const { continueChat } = require("../services/playground/continueChat");
+const schema = require("../schemas/chatContinue.schema");
 
 
 // AJV setup ========================================
@@ -17,14 +17,15 @@ const validate = ajv.compile(schema);
 
 
 // Define the Azure Function ========================
-app.http("flowDelete", {
-    route: "delete-flow",
-    methods: ["DELETE"],
+app.http("continue-chat", {
+    route: "playground/chats/continue",
+    methods: ["POST"],
     authLevel: "anonymous",
 
     handler: async (req, context) => {
-        // Validate request body
+        console.log("[CHAT CONTINUE] Continue chat request received");
         try {
+            // Validate request body
             const body = await req.json();
             const valid = validate(body);
             if (!valid) {
@@ -32,13 +33,13 @@ app.http("flowDelete", {
                     errors: validate.errors,
                 });
             }
-            // Call the main functionality
-            const response = await deleteFlow(body);
-            return ok(response);
+            const result = await continueChat(body);
+            return ok(result);
         } catch (err) {
-            console.error("ERROR EN FLOW DELETE:");
-            console.error(err);
-            return badRequest("FLOW_DELETE_FAILED", { message: err.message });
+            console.log("[CHAT CONTINUE] Error during chat continuation", err);
+            return badRequest("CHAT_CONTINUE_ERROR", {
+                message: err.message,
+            });
         }
-    },
+    }
 });

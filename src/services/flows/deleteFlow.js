@@ -12,19 +12,25 @@ const { deleteFromTable } = require("../storage/storage.js");
 
 // Función para eliminar un flujo (tool) de un agente en Foundry y de Table Storage
 async function deleteFlow(body){
-    // El body debe contener el flowName (nombre de la tool a eliminar)
-    const { flowName, storedFlowRowKey } = body;
-    const agent = await getFoundryAgent();
-    const updatedAgent = await deleteOpenAPITool(agent, flowName);
-    if(!updatedAgent){
-        // No borraría de Table Storage si no se borró de Foundry
-        throw new Error("No se pudo eliminar la herramienta del agente en Foundry.");
+    try {
+        // El body debe contener el flowName (nombre de la tool a eliminar)
+        const { flowName, storedFlowRowKey } = body;
+        const agent = await getFoundryAgent();
+        const updatedAgent = await deleteOpenAPITool(agent, flowName);
+        if(!updatedAgent){
+            // No borraría de Table Storage si no se borró de Foundry
+            throw new Error("No se pudo eliminar la herramienta del agente en Foundry.");
+        }
+        /* const tableDeletionResult = await deleteFromTable({
+            tableName: process.env.FLOWS_TABLE_NAME,
+            rowKey: storedFlowRowKey
+        }); */
+        return updatedAgent;
+    } catch (err) {
+        console.error("ERROR EN DELETE FLOW:");
+        console.error(err);
+        throw err;
     }
-    const tableDeletionResult = await deleteFromTable({
-        tableName: process.env.FLOWS_TABLE_NAME,
-        rowKey: storedFlowRowKey
-    });
-    return updatedAgent;
 }
 
 module.exports = { deleteFlow };
