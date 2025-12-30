@@ -1,8 +1,14 @@
-const { getFoundryAgent, updateOpenAPITool } = require("../foundry/foundryAgentManagerTool");
+const { getAgentByName, updateAgentDefinition, replaceOpenApiTool, buildOpenApiTool } = require("../foundry/foundryAgentManagerTool");
 const { storeInTable } = require("../storage/storage");
 
 
 
+// CONSTANTES ==================================
+const AGENT_NAME = process.env.FOUNDRY_AGENT_NAME;
+
+
+
+// FUNCTIONES ===================================
 // Funciones auxiliares para actualizar el Flow en Table Storage
 async function saveUpdatedFlowToTableStorage(body) {
     try {
@@ -33,6 +39,7 @@ async function saveUpdatedFlowToTableStorage(body) {
     }
 }
 
+
 // Función principal para actualizar un Flow a partir de un OpenAPI JSON
 async function updateFlow(body) {
     try {
@@ -40,15 +47,43 @@ async function updateFlow(body) {
             throw new Error("rowKey (id) is required to update a flow");
         }
 
-        // 1. Obtener agente
-        const agent = await getFoundryAgent();
+        const { flowName, openApiJson } = body;
 
-        // 2. Actualizar herramienta OpenAPI en Foundry
-        const updatedAgent = await updateOpenAPITool(agent, body);
-        console.log("[DEBUG] Agente actualizado tras modificar la herramienta:", JSON.stringify(updatedAgent, null, 2));
+        // 1. Obtener agente
+        const agent = await getAgentByName(AGENT_NAME);
+        const latestDef = agent.versions.latest.definition;
+        console.log(`[DEBUG]  latestDef del agente "${AGENT_NAME}":`, JSON.stringify(latestDef, null, 2));
+        const currentTools = latestDef.tools ?? [];
+        console.log(`[DEBUG]  currentTools del agente "${AGENT_NAME}":`, JSON.stringify(currentTools, null, 2));
+        // Actualizar las herramientas:
+        // 2. Construir nueva tool OpenAPI
+        const updatedOpenApiTool = await buildOpenApiTool(openApiJson);
+        console.log(`[DEBUG]  Nueva herramienta OpenAPI construida:`, JSON.stringify(updatedOpenApiTool, null, 2));
         
-        // 3. Actualizar entidad en Table Storage (UPSERT)
-        const updatedFlowInStorage = await saveUpdatedFlowToTableStorage(body);
+        // 3. Reemplazar la tool existente
+        const updatedTools = await replaceOpenApiTool(
+            currentTools,
+            updatedOpenApiTool
+        );
+        console.log(`[DEBUG] Herramientas actualizadas del agente:`, JSON.stringify(updatedTools, null, 2));
+        
+        // 4. Update del agente (nueva versión)
+        const updatedAgent = await updateAgentDefinition(
+            AGENT_NAME,
+            {
+                ...latestDef,
+                tools: updatedTools
+            }
+        );
+
+        console.log(
+            "[DEBUG] Agente actualizado tras modificar la herramienta:",
+            JSON.stringify(updatedAgent, null, 2)
+        );
+
+
+        // 5. Actualizar entidad en Table Storage (UPSERT)
+        await saveUpdatedFlowToTableStorage(body);
 
         return {
             id: body.storedFlowRowKey,

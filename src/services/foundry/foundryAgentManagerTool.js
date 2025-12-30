@@ -113,6 +113,30 @@ async function updateAgentDefinition(agentName, definition) {
 }
 
 
+// Función para reemplazar una herramienta (tool) OpenAPI en un agente de Foundry
+async function replaceOpenApiTool(tools = [], newOpenApiTool) {
+    let found = false;
+    const updatedTools = tools.map(tool => {
+        if (
+            tool.type === "openapi" &&
+            tool.openapi?.name === newOpenApiTool.openapi.name
+        ) {
+            found = true;
+            return newOpenApiTool;
+        }
+        return tool;
+    });
+
+    if (!found) {
+        throw new Error(
+            `OpenAPI tool '${newOpenApiTool.openapi.name}' no existe en el agente`
+        );
+    }
+
+    return updatedTools;
+}
+
+
 /** 
     * @deprecated
 */
@@ -270,6 +294,7 @@ async function configureAgent({ agentId, indexId, openApiTools = [] }) {
 module.exports = {
     getAgentByName,
     getOpenAIClient,
+    replaceOpenApiTool,
     createNewConversation,
     createResponseInConversation,
     buildOpenApiTool,
