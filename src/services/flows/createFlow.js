@@ -1,4 +1,5 @@
 // Local imports
+const filteringDuplicatedTools = require("../../utils/filteringDuplicatedTools.js");
 const { storeInTable } = require("../storage/storage.js");
 const {
     getAgentByName,
@@ -58,6 +59,7 @@ async function saveFlowToTableStorage(body) {
     }
 }
 
+
 // Funcion principal para crear un Flow a partir de un OpenAPI JSON
 async function createFlow(body) {
     try {
@@ -69,10 +71,7 @@ async function createFlow(body) {
         // Construimos nueva tool que llegó en el body:
         const newFlowTool = await buildOpenApiTool(body);
         // Evitar duplicados por nombre
-        const existingTools = latestDef.tools ?? [];
-        const filteredTools = existingTools.filter(
-            t => !(t.type === "openapi" && t.openapi?.name === newFlowTool.openapi.name)
-        );
+        const filteredTools = filteringDuplicatedTools(latestDef.tools, newFlowTool.openapi.name);
 
         const newTools = [...filteredTools, newFlowTool];
         
@@ -98,6 +97,7 @@ async function createFlow(body) {
         throw err;
     }
 }
+
 
 module.exports = {
     createFlow,

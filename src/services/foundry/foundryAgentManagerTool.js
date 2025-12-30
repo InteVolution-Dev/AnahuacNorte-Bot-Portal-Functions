@@ -9,7 +9,9 @@ const projectClient = new AIProjectClient(
     credential
 );
 
-// Funciones auxiliares. TODO: hacer que todas las llamadas a "getFoundryAgent" manden el foundryAssistantId
+
+
+// FUNCIONES ===============================================
 // Función para traer el agente por su nombre
 async function getAgentByName(agentName = process.env.FOUNDRY_AGENT_NAME) {
     try {
@@ -82,6 +84,7 @@ async function createResponseInConversation(openAIClient, conversationId, userMe
 };
 
 
+// Función para construir una herramienta (tool) OpenAPI
 async function buildOpenApiTool(openApiJson) {
     const cleaned = { ...openApiJson };
     delete cleaned.active;
@@ -92,12 +95,13 @@ async function buildOpenApiTool(openApiJson) {
             name: cleaned.info?.title,
             description: cleaned.info?.description,
             spec: cleaned,
-            auth: { type: "anonymous" }
+            auth: { type: "anonymous" }  // TODO: ajustar para usar ApiKeyAuth real
         }
     };
 }
 
 
+// Función para actualizar la definición de un agente en Foundry y generar una nueva versión
 async function updateAgentDefinition(agentName, definition) {
     try {
         return await projectClient.agents.update(agentName, definition);
@@ -107,6 +111,7 @@ async function updateAgentDefinition(agentName, definition) {
         throw err;
     }
 }
+
 
 /** 
     * @deprecated
