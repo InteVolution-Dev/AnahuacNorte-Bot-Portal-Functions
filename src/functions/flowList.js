@@ -13,10 +13,16 @@ app.http('flowList', {
     authLevel: 'anonymous',
 
     handler: async (req, context) => {
-        const response = await listFlows();
-        if (response.status && response.status !== 200) {
-            return badRequest("ERROR_LISTING_FLOWS", response.jsonBody);
+        try {
+            const response = await listFlows();
+            if (response.status && response.status !== 200) {
+                return badRequest("ERROR_LISTING_FLOWS", response.jsonBody);
+            }
+            return ok(response);
+        } catch (err) {
+            console.error("ERROR EN FLOW LIST:");
+            console.error(err);
+            return badRequest("FLOW_LIST_FAILED", { message: err.message });
         }
-        return ok(response);
     }
 });

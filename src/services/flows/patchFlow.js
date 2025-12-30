@@ -1,15 +1,22 @@
-const { getFoundryAgent, registerOpenAPITool, deleteOpenAPITool } = require("../foundry/foundryAgentManagerTool");
+// Local imports
+const { getAgentByName, updateAgentDefinition, buildOpenApiTool } = require("../foundry/foundryAgentManagerTool");
 const { storeInTable, getFromTable } = require("../storage/storage");
+const filteringDuplicatedTools = require("../../utils/filteringDuplicatedTools");
 
 
+// CONSTANTES ==================================
+const AGENT_NAME = process.env.FOUNDRY_AGENT_NAME;
 
+
+// FUNCIONES ===================================
 // Funciones auxiliares para actualizar el Flow en Table Storage
 async function savePatchedFlowToTableStorage(body) {
     try {
         const entity = {
             partitionKey: "flows",
             rowKey: body.storedFlowRowKey,
-            active: Boolean(body.active),
+            desiredActive: Boolean(body.active),
+            playgroundActive: Boolean(body.active),
             updatedAt: new Date().toISOString(),
         };
 
@@ -24,6 +31,7 @@ async function savePatchedFlowToTableStorage(body) {
         throw err;
     }
 }
+
 
 // Función principal para actualizar un Flow a partir de un OpenAPI JSON
 async function patchFlow(body) {
@@ -49,23 +57,42 @@ async function patchFlow(body) {
         }
 
         // 1. Obtener agente
-        const agent = await getFoundryAgent();
+        const agent = await getAgentByName(AGENT_NAME);
         console.log("[DEBUG] Agente de Foundry obtenido:", JSON.stringify(agent, null, 2));
+        const latestDef = agent.versions.latest.definition;  // Definición más reciente del agente
 
         // 2. Verificar si el Flow debe estar activo o no en Foundry
         if (body.active) {
             // 2.1 Registrar herramienta OpenAPI en Foundry
-            const updatedAgent = await registerOpenAPITool(agent, openApiJson);
+            const newFlowTool = await buildOpenApiTool(openApiJson);
+            // Evitar duplicados por nombre
+            const filteredTools = filteringDuplicatedTools(latestDef.tools, newFlowTool.openapi.name);
+            const updatedAgent = await updateAgentDefinition(
+                AGENT_NAME,
+                {
+                    ...latestDef,
+                    tools: [...filteredTools, newFlowTool],
+                }
+            );
             console.log("[DEBUG] Agente actualizado con nueva herramienta OpenAPI:", JSON.stringify(updatedAgent, null, 2));
         } else {
-            // 2.5 Eliminar herramienta OpenAPI previa si existe
-            const existingTool = (agent.tools || []).find(tool => tool.type === "openapi" && tool.openapi?.name === openApiJson.info?.title);
-            if (!existingTool) {
-                console.log("[DEBUG] No se encontró herramienta OpenAPI previa para eliminar.");
-                throw new Error("No existe el flujo en la herramienta del agente.");
+            // 2.2 Eliminar herramienta OpenAPI de Foundry
+            const flowName = openApiJson.info?.title;
+            const currentTools = latestDef.tools ?? [];
+            const filteredTools = filteringDuplicatedTools(currentTools, flowName)
+
+            if (filteredTools.length === currentTools.length) {
+                console.warn(`[WARN] Flow '${flowName}' no estaba activo en Foundry.`);
             }
-            await deleteOpenAPITool(agent, openApiJson.info?.title);
-            console.log(`[DEBUG] Herramienta OpenAPI eliminada: ${existingTool.openapi.name}`);
+
+            await updateAgentDefinition(
+                AGENT_NAME,
+                {
+                    ...latestDef,
+                    tools: filteredTools
+                }
+            );
+            console.log(`[DEBUG] Herramienta OpenAPI eliminada: ${flowName}`);
         }
 
         // 3. Actualizar entidad en Table Storage (UPSERT)
