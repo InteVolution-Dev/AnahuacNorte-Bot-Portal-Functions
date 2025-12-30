@@ -59,22 +59,15 @@ async function createNewConversation(openAIClient, userMessage) {
 
 
 // Función para crear una respuesta en una conversación existente
-async function createResponseInConversation(openAIClient, conversationId, userMessage, agentName = process.env.FOUNDRY_AGENT_NAME) {
+async function createResponseInConversation(openAIClient, conversationId, agentName = process.env.FOUNDRY_AGENT_NAME) {
     try {
         return await openAIClient.responses.create(
             {
                 conversation: conversationId,
-                input: userMessage,
-            
             },
             {
-                body: {
-                    agent: {
-                        name: agentName,
-                        type: "agent_reference"
-                    }
-                }
-            }
+                body: { agent: { name: agentName, type: "agent_reference" } },
+            },
         );
     } catch (err) {
         console.error("ERROR AL CREAR RESPUESTA EN CONVERSACIÓN:");

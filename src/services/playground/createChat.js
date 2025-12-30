@@ -11,17 +11,15 @@ const AGENT_NAME = process.env.FOUNDRY_AGENT_NAME;
 async function createChat(body) {
     try {
         console.log("[PLAYGROUND MANAGER TOOL] Creating chat with body:", body);
-        const userMessage = body.userMessage || "Hello, this is a test message from PlaygroundManagerTool.";
+        const userMessage = body.userMessage || "Hello, this is a test message from PlaygroundManagerTool. Respond with an echo.";
         // Retrieve agent details
         const retrievedAgent = await getAgentByName(AGENT_NAME);
-        console.log("[DEBUG] Agent details:", JSON.stringify(retrievedAgent, null, 2));
         // Use the retrieved agent to create a conversation and generate a response
         const openAIClient = await getOpenAIClient();
         // Create conversation
         const conversation =  await createNewConversation(openAIClient, userMessage);
         // Create response in conversation
-        const response = await createResponseInConversation(openAIClient, conversation.id, userMessage, AGENT_NAME);
-
+        const response = await createResponseInConversation(openAIClient, conversation.id, AGENT_NAME);
         return {
             conversationId: conversation.id,
             response: response.output_text
