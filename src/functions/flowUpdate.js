@@ -23,17 +23,22 @@ app.http("flowUpdate", {
     authLevel: "anonymous",
 
     handler: async (req, context) => {
-        // Validate request body
-        const body = await req.json();
-        const valid = validate(body);
-        if (!valid) {
-            return badRequest("INVALID_PAYLOAD", {
-                errors: validate.errors,
-            });
+        try {
+            // Validate request body
+            const body = await req.json();
+            const valid = validate(body);
+            if (!valid) {
+                return badRequest("INVALID_PAYLOAD", {
+                    errors: validate.errors,
+                });
+            }
+            // Call the main functionality
+            const response = await updateFlow(body);
+            return ok(response);
+        } catch (err) {
+            console.error("[FLOW UPDATE] Error:", err);
+            return badRequest("UPDATE_FAILED", { message: err.message });
         }
-        // Call the main functionality
-        const response = await updateFlow(body);
-        return ok(response);
     }
 });
 
