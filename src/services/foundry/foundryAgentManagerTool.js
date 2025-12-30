@@ -59,22 +59,38 @@ async function createNewConversation(openAIClient, userMessage) {
 
 
 // Función para crear una respuesta en una conversación existente
-async function createResponseInConversation(openAIClient, conversationId, agentName = process.env.FOUNDRY_AGENT_NAME) {
+async function createResponseInConversation(openAIClient, conversationId, agent) {
     try {
         return await openAIClient.responses.create(
             {
                 conversation: conversationId,
             },
             {
-                body: { agent: { name: agentName, type: "agent_reference" } },
+                body: { agent: { name: agent.name, type: "agent_reference" } },
             },
-        );
+        )
     } catch (err) {
         console.error("ERROR AL CREAR RESPUESTA EN CONVERSACIÓN:");
         console.error(err);
         throw err;
     }
 };
+
+
+async function continueConversation(openAIClient, conversationId, userMessage) {
+    try {
+        return await openAIClient.conversations.items.create(
+            conversationId, 
+            {
+                items: [{ type: "message", role: "user", content: userMessage }],
+            }
+        );
+    } catch (err) {
+        console.error("ERROR AL CONTINUAR CONVERSACIÓN:");
+        console.error(err);
+        throw err;
+    }
+}
 
 
 // Función para construir una herramienta (tool) OpenAPI
@@ -130,9 +146,17 @@ async function replaceOpenApiTool(tools = [], newOpenApiTool) {
 }
 
 
-/** 
+
+
+
+
+
+
+
+
+/** ******************************************************* 
     * @deprecated
-*/
+*/ 
 // Configuración del cliente de Foundry
 async function registerOpenAPITool(agent, openapiJson) {
     try {
@@ -288,6 +312,7 @@ module.exports = {
     getAgentByName,
     getOpenAIClient,
     replaceOpenApiTool,
+    continueConversation,
     createNewConversation,
     createResponseInConversation,
     buildOpenApiTool,

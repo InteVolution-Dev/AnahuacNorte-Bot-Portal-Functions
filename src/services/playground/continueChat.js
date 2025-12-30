@@ -1,7 +1,9 @@
 // Local imports
 const {
+    getAgentByName,
     getOpenAIClient,
-    createResponseInConversation,
+    continueConversation,
+    createResponseInConversation
 } = require("../foundry/foundryAgentManagerTool");
 
 
@@ -33,18 +35,25 @@ async function continueChat(body) {
         // 🔹 IMPORTANTE:
         // En Foundry v2 NO agregas el mensaje manualmente.
         // El Responses API se encarga del contexto completo.
-        const response = await createResponseInConversation(
+        const response = await continueConversation(
             openAIClient,
             conversationId,
-            userMessage,
-            AGENT_NAME,
+            userMessage
         );
 
         console.log(`[DEBUG] Response from Foundry: ${JSON.stringify(response, null, 2)}`);
-
+        console.log("\nGenerating second response...");
+        // Retrieve agent details
+        const retrievedAgent = await getAgentByName(AGENT_NAME);
+        const response2 = await createResponseInConversation(
+            openAIClient,
+            conversationId,
+            retrievedAgent
+        );
+        console.log(`Response output: ${response2.output_text}`);
         return {
             conversationId,
-            response: response.output_text,
+            response: response2.output_text,
         };
     } catch (err) {
         console.error("[PLAYGROUND][continueChat] Error");
