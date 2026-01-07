@@ -3,7 +3,6 @@ const { app } = require('@azure/functions');
 // Local imports
 const { ok, badRequest } = require("../utils/response");
 const { uploadFiles } = require("../services/indexes/uploadFiles");
-const schema = require("../schemas/indexUploadFile.schema");
 
 
 
