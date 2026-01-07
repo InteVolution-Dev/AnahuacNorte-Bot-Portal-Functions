@@ -171,13 +171,15 @@ async function uploadFiles({ indexId, files }) {
                 indexId,
                 file,
             });
-
+            console.log(`[DEBUG] Uploaded file to Vector Store:`, vectorResult);
             await updateFileRecord({
                 indexId,
                 rowKey: record.rowKey,
-                vectorStoreFileId: vectorResult.files[0].vectorStoreFileId,
+                vectorStoreFileId: vectorResult.vectorStoreFileId,
                 status: "INDEXED",
             });
+            record.vectorStoreFileId = vectorResult.vectorStoreFileId;
+            record.status = "INDEXED";
         } catch (err) {
             await updateFileRecord({
                 indexId,
@@ -185,8 +187,9 @@ async function uploadFiles({ indexId, files }) {
                 status: "FAILED",
                 errorMessage: err.message,
             });
+            record.status = "FAILED";
+            record.errorMessage = err.message;
         }
-
         uploaded.push(record);
     }
 
