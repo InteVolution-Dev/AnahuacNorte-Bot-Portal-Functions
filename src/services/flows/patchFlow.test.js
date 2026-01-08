@@ -1,8 +1,8 @@
 // Mocks de los módulos externos
 jest.mock("../foundry/foundryAgentManagerTool", () => ({
-    getFoundryAgent: jest.fn(),
-    registerOpenAPITool: jest.fn(),
-    deleteOpenAPITool: jest.fn(),
+    getAgentByName: jest.fn(),
+    buildOpenApiTool: jest.fn(),
+    updateAgentDefinition: jest.fn(),
 }));
 
 jest.mock("../storage/storage", () => ({
@@ -13,118 +13,62 @@ jest.mock("../storage/storage", () => ({
 // Importar la función a testear y los mocks
 const { patchFlow } = require("./patchFlow");
 const {
-    getFoundryAgent,
-    registerOpenAPITool,
-    deleteOpenAPITool,
+    getAgentByName,
+    buildOpenApiTool,
+    updateAgentDefinition,
 } = require("../foundry/foundryAgentManagerTool");
 const { storeInTable, getFromTable } = require("../storage/storage");
 
-// Tests para la función patchFlow
 describe("patchFlow", () => {
-    // Test: Activar un flujo correctamente
-    describe("Activar flujo", () => {
-        beforeEach(() => {
-            jest.clearAllMocks();
-        });
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
 
+    describe("Activar flujo", () => {
         it("debería registrar la herramienta OpenAPI al activar un flujo", async () => {
-            // ----------- GIVEN -----------
-            const agentMock = {
-                id: "agent-test",
+            const openApiJsonMock = {
+                openapi: "3.0.3",
+                info: {
+                    title: "prueba_3",
+                    description: "describe",
+                    version: "1.0.0",
+                },
+                paths: {},
+                components: {},
             };
 
-            const storedFlowMock = {
-                partitionKey: "flows",
-                rowKey: "flow-123",
-                timeStamp: "2024-01-01T00:00:00Z",
-                active: true,
-                baseUrl: "https://api.example.com",
-                createdAt: "2024-01-01T00:00:00Z",
-                updatedAt: "2024-01-01T00:00:00Z",
-                description: "Test Flow descripcion",
-                payloadJson: JSON.stringify({
-                    openapi: "3.0.3",
-                    info: {
-                        title: "prueba_3",
-                        description: "describe",
-                        version: "1.0.0",
-                    },
-                    servers: [{ url: "http://localhost:5173/flows" }],
-                    paths: {
-                        "/ruta/{id}": {
-                            get: {
-                                summary: "ruta",
-                                description: "",
-                                operationId: "ruta_uniquefhvnnm",
-                                parameters: [
-                                    {
-                                        name: "id",
-                                        in: "path",
-                                        required: true,
-                                        description: "es identificador",
-                                        schema: {
-                                            type: "string",
-                                            example: "1",
-                                        },
-                                    },
-                                ],
-                                responses: {
-                                    200: {
-                                        description:
-                                            "La petición se realizó correctamente",
-                                        content: {
-                                            "application/json": {
-                                                schema: { type: "object" },
-                                            },
-                                        },
-                                    },
-                                },
-                            },
+            const agentMock = {
+                versions: {
+                    latest: {
+                        definition: {
+                            tools: [],
                         },
                     },
-                    components: {},
-                }),
+                },
             };
 
-            const openApiJsonMock = JSON.parse(storedFlowMock.payloadJson);
+            getAgentByName.mockResolvedValue(agentMock);
+            buildOpenApiTool.mockResolvedValue({
+                type: "openapi",
+                openapi: { name: openApiJsonMock.info.title },
+            });
+            updateAgentDefinition.mockResolvedValue({});
+            storeInTable.mockResolvedValue({});
+            getFromTable.mockResolvedValue({
+                rowKey: "flow-123",
+                payloadJson: JSON.stringify(openApiJsonMock),
+                active: false,
+            });
 
-            const bodyMock = {
+            const result = await patchFlow({
                 storedFlowRowKey: "flow-123",
                 active: true,
-            };
-
-            getFromTable.mockResolvedValue(storedFlowMock);
-            getFoundryAgent.mockResolvedValue(agentMock);
-            registerOpenAPITool.mockResolvedValue({
-                id: agentMock.id,
-                tools: [
-                    // aquí solo estoy poniendo lo mínimo, al final el agente que regresa no se usa para nada, solo para un log
-                    {
-                        type: "openapi",
-                        openapi: { name: openApiJsonMock.info.title },
-                    },
-                ],
             });
-            storeInTable.mockResolvedValue({}); // Mock para evitar errores al guardar
 
-            // ----------- WHEN -----------
-            const result = await patchFlow(bodyMock);
-
-            // ---------- THEN ----------
-            expect(getFoundryAgent).toHaveBeenCalledTimes(1);
-
-            expect(registerOpenAPITool).toHaveBeenCalledTimes(1);
-            expect(registerOpenAPITool).toHaveBeenCalledWith(
-                agentMock,
-                openApiJsonMock // ya parseado arriba
-            );
-
+            expect(getAgentByName).toHaveBeenCalledTimes(1);
+            expect(buildOpenApiTool).toHaveBeenCalledTimes(1);
+            expect(updateAgentDefinition).toHaveBeenCalledTimes(1);
             expect(storeInTable).toHaveBeenCalledTimes(1);
-            expect(storeInTable).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    mode: "merge",
-                })
-            );
 
             expect(result).toEqual({
                 id: "flow-123",
@@ -134,109 +78,52 @@ describe("patchFlow", () => {
         });
     });
 
-    // Test: Desactivar un flujo correctamente
     describe("Desactivar flujo", () => {
-        beforeEach(() => {
-            jest.clearAllMocks();
-        });
-        it("debería eliminar la herramienta OpenAPI al desactivar un flujo", async () => {
-            // ----------- GIVEN -----------
-            const bodyMock = {
-                storedFlowRowKey: "flow-456",
-                active: false,
+        it("debería remover la herramienta OpenAPI al desactivar un flujo", async () => {
+            const openApiJsonMock = {
+                openapi: "3.0.3",
+                info: {
+                    title: "prueba_3",
+                    description: "describe",
+                    version: "1.0.0",
+                },
+                paths: {},
+                components: {},
             };
-
-            const storedFlowMock = {
-                partitionKey: "flows",
-                rowKey: "flow-456",
-                timeStamp: "2024-01-01T00:00:00Z",
-                active: true,
-                baseUrl: "https://api.example.com",
-                createdAt: "2024-01-01T00:00:00Z",
-                updatedAt: "2024-01-01T00:00:00Z",
-                description: "Test Flow descripcion",
-                payloadJson: JSON.stringify({
-                    openapi: "3.0.3",
-                    info: {
-                        title: "prueba_3",
-                        description: "describe",
-                        version: "1.0.0",
-                    },
-                    servers: [
-                        {
-                            url: "http://localhost:5173/flows",
-                        },
-                    ],
-                    paths: {
-                        "/ruta/{id}": {
-                            get: {
-                                summary: "ruta",
-                                description: "",
-                                operationId: "ruta_uniquefhvnnm",
-                                parameters: [
-                                    {
-                                        name: "id",
-                                        in: "path",
-                                        required: true,
-                                        description: "es identificador",
-                                        schema: {
-                                            type: "string",
-                                            example: "1",
-                                        },
-                                    },
-                                ],
-                                responses: {
-                                    200: {
-                                        description:
-                                            "La petición se realizó correctamente",
-                                        content: {
-                                            "application/json": {
-                                                schema: {
-                                                    type: "object",
-                                                },
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    components: {},
-                }),
-            };
-
-            const openApiJsonMock = JSON.parse(storedFlowMock.payloadJson);
 
             const agentMock = {
-                id: "agent-test",
-                tools: [
-                    {
-                        type: "openapi",
-                        openapi: { name: openApiJsonMock.info.title },
+                versions: {
+                    latest: {
+                        definition: {
+                            tools: [
+                                {
+                                    type: "openapi",
+                                    openapi: { name: openApiJsonMock.info.title },
+                                },
+                            ],
+                        },
                     },
-                ],
+                },
             };
 
-            getFromTable.mockResolvedValue(storedFlowMock);
-            getFoundryAgent.mockResolvedValue(agentMock);
-            deleteOpenAPITool.mockResolvedValue({});
+            getAgentByName.mockResolvedValue(agentMock);
+            updateAgentDefinition.mockResolvedValue({});
             storeInTable.mockResolvedValue({});
-            // ----------- WHEN -----------
-            const result = await patchFlow(bodyMock);
+            getFromTable.mockResolvedValue({
+                rowKey: "flow-456",
+                payloadJson: JSON.stringify(openApiJsonMock),
+                active: true,
+            });
 
-            // ---------- THEN ----------
-            expect(getFoundryAgent).toHaveBeenCalledTimes(1);
-            expect(deleteOpenAPITool).toHaveBeenCalledTimes(1);
-            expect(deleteOpenAPITool).toHaveBeenCalledWith(
-                agentMock,
-                openApiJsonMock.info.title
-            );
+            const result = await patchFlow({
+                storedFlowRowKey: "flow-456",
+                active: false,
+            });
+
+            expect(getAgentByName).toHaveBeenCalledTimes(1);
+            expect(updateAgentDefinition).toHaveBeenCalledTimes(1);
             expect(storeInTable).toHaveBeenCalledTimes(1);
-            expect(storeInTable).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    mode: "merge",
-                })
-            );
+
             expect(result).toEqual({
                 id: "flow-456",
                 active: false,
@@ -245,6 +132,7 @@ describe("patchFlow", () => {
         });
     });
 });
+
 
 /* 
 
