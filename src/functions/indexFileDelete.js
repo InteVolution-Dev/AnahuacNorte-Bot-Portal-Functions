@@ -21,7 +21,7 @@ const validate = ajv.compile(schema);
 // Define the Azure Function ========================
 app.http('delete-file', {
     route: 'indexes/delete-file',
-    methods: ['POST'],
+    methods: ['DELETE'],
     authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
