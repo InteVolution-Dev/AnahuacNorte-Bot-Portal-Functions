@@ -5,8 +5,8 @@ const Ajv = require("ajv");
 const addFormats = require("ajv-formats");
 // Local imports
 const { ok, badRequest } = require("../utils/response");
-const { deleteFile } = require("../services/indexes/deleteFile");
-const schema = require("../schemas/deleteFile.schema");
+const { updateSystemPrompt } = require("../services/prompt/updateSystemPrompt");
+const schema = require("../schemas/systemPromptUpdate.schema");
 
 
 
@@ -19,13 +19,13 @@ const validate = ajv.compile(schema);
 
 
 // Define the Azure Function ========================
-app.http('delete-file', {
-    route: 'indexes/delete-file',
-    methods: ['DELETE'],
+app.http('updateSystemPrompt', {
+    route: 'system-prompt',
+    methods: ['PUT'],
     authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
-            console.log("[DELETE FILE] Delete file request received");
+            console.log("[UPDATE SYSTEM PROMPT] Update system prompt request received");
             // Validate request body
             const body = await request.json();
             const valid = validate(body);
@@ -34,12 +34,12 @@ app.http('delete-file', {
                     errors: validate.errors,
                 });
             }
-            const response = await deleteFile(body);
+            const response = await updateSystemPrompt(body);
             
             return ok(response);
         } catch (err) {
-            context.error("[DELETE FILE] Error:", err);
-            return badRequest("DELETE_FILE_FAILED", { message: err.message });
+            context.error("[UPDATE SYSTEM PROMPT] Error:", err);
+            return badRequest("UPDATE_SYSTEM_PROMPT_FAILED", { message: err.message });
         }
     }
 });
