@@ -15,7 +15,7 @@
     "ajv-formats": "^3.0.1",
     "openai": "^6.15.0"
   },
-  "main": "src/{index.js,functions/*.js}",
+  "main": "index.js",
   "devDependencies": {
     "jest": "^30.2.0"
   }
