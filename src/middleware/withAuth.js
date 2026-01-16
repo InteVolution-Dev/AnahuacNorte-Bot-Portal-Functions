@@ -23,7 +23,6 @@ const withAuth = (handler) => {
 
             const token = auth.replace("Bearer ", "");
             const claims = await verifyToken(token);
-            console.log(`[DEBUG] Token verified, claims:`, claims);
             const email =
                 claims.preferred_username ||
                 claims.upn ||
@@ -31,7 +30,7 @@ const withAuth = (handler) => {
             
             const normalizedEmail = email ? email.toLowerCase() : null;
 
-            /* if (!normalizedEmail || !normalizedEmail.endsWith(EXPECTED_DOMAIN)) {
+            if (!normalizedEmail || !normalizedEmail.endsWith(EXPECTED_DOMAIN)) {
                 return forbidden("INVALID_DOMAIN", {
                     message: "User domain is not allowed"
                 });
@@ -43,16 +42,11 @@ const withAuth = (handler) => {
                     message: "El usuario no está en la lista de administradores admitidos."
                 });
             }
- */
-            // logging no bloqueante (idealmente)
-            /* logLogin(claims, req).catch(err => {
-                context.log.warn("Login logging failed", err);
-            }); */
 
             // inyectar identidad al handler
             req.user = {
                 oid: claims.oid,
-                email: email,
+                email: normalizedEmail,
                 tid: claims.tid,
                 name: claims.name
             };

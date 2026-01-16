@@ -3,6 +3,8 @@ const { app } = require("@azure/functions");
 // Third party imports
 const Ajv = require("ajv");
 const addFormats = require("ajv-formats");
+// Middleware for authentication
+const { withAuth } = require("../middleware/withAuth.js");
 // Local imports
 const { badRequest, ok } = require("../utils/response");
 const { deleteFlow } = require("../services/flows/deleteFlow.js");
@@ -22,7 +24,7 @@ app.http("flowDelete", {
     methods: ["DELETE"],
     authLevel: "anonymous",
 
-    handler: async (req, context) => {
+    handler: withAuth( async (req, context) => {
         // Validate request body
         try {
             const body = await req.json();
@@ -40,5 +42,5 @@ app.http("flowDelete", {
             console.error(err);
             return badRequest("FLOW_DELETE_FAILED", { message: err.message });
         }
-    },
+    })
 });

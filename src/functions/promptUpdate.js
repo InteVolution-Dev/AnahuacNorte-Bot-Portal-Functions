@@ -1,5 +1,7 @@
 // Azure Functions imports
 const { app } = require("@azure/functions");
+// Middleware for authentication
+const { withAuth } = require("../middleware/withAuth.js");
 // Local imports
 const { ok, badRequest } = require("../utils/response");
 
@@ -10,7 +12,7 @@ app.http("update-config", {
     methods: ["POST"],
     authLevel: "anonymous",
 
-    handler: async (req, context) => {
+    handler: withAuth( async (req, context) => {
         console.log("[CONFIG UPDATE] Config update request received");
         try {
             // Aquí iría la lógica para actualizar la configuración
@@ -21,5 +23,5 @@ app.http("update-config", {
             console.log("[CONFIG UPDATE] Error during configuration update", err);
             return badRequest("CONFIG_UPDATE_FAILED", { message: err.message });
         }
-    }
+    })
 });

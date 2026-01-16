@@ -1,5 +1,7 @@
 // Azure Functions imports
 const { app } = require("@azure/functions");
+// Middleware for authentication
+const { withAuth } = require("../middleware/withAuth.js");
 // Local imports
 const { ok, badRequest } = require("../utils/response");
 const { listIndexedFiles } = require("../services/indexes/listIndexedFiles");
@@ -11,7 +13,7 @@ app.http("list-index-files", {
     route: "indexes/files",
     methods: ["GET"],
     authLevel: "anonymous",
-    handler: async (request, context) => {
+    handler: withAuth( async (request, context) => {
         try {
             const indexId = process.env.AZURE_OPENAI_PLAYGROUND_INDEX_ID;
             if (!indexId) {
@@ -29,5 +31,5 @@ app.http("list-index-files", {
                 message: err.message
             });
         }
-    }
+    })
 });

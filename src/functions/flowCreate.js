@@ -3,6 +3,8 @@ const { app } = require("@azure/functions");
 // Third party imports
 const Ajv = require("ajv");
 const addFormats = require("ajv-formats");
+// Middleware for authentication
+const { withAuth } = require("../middleware/withAuth.js");
 // Local imports
 const { badRequest, created } = require("../utils/response");
 const { createFlow } = require("../services/flows/createFlow.js");
@@ -22,7 +24,7 @@ app.http("flowCreate", {
     methods: ["POST"],
     authLevel: "anonymous",
 
-    handler: async (req, context) => {
+    handler: withAuth(async (req, context) => {
         try {
             // Validate request body
             const body = await req.json();
@@ -40,5 +42,5 @@ app.http("flowCreate", {
             console.error(err);
             return badRequest("FLOW_CREATE_FAILED", { message: err.message });
         }
-    },
+    })
 });

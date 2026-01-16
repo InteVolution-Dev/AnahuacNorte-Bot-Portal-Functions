@@ -10,12 +10,12 @@ const PARTITION_KEY = "allowed-users";
 
 // FUNCIONES ==============================================================
 // Funcion principal del middleware
-async function isUserAllowed(email) {
+async function isUserAllowed(normalizedEmail) {
     // aquí debemos tomar el email recibido y verificar si está en la lista de permitidos
     // la lista es una tabla en table storage
     // el Partition Key es: allowed-users
     // el Row Key es el email del usuario
-    if (!email) return false;
+    if (!normalizedEmail) return false;
     // email ya viene nortmalizado en lowercase desde el middleware
     try {
         const isAllowed = await getFromTable({
