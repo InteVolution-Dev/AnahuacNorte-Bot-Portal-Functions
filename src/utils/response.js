@@ -42,6 +42,10 @@ function unauthorized(message = "UNAUTHORIZED", meta = {}) {
     return buildResponse(401, message, null, meta);
 }
 
+function forbidden(message = "FORBIDDEN", meta = {}) {
+    return buildResponse(403, message, null, meta);
+}
+
 function notFound(message = "NOT_FOUND", meta = {}) {
     return buildResponse(404, message, null, meta);
 }
