@@ -23,10 +23,10 @@ async function listFlows() {
                 description: entity.description ?? null,
                 baseUrl: entity.baseUrl ?? null,
                 active:
-                    entity.active === true ||
-                    entity.active === "true" ||
-                    entity.active === "1" ||
-                    entity.active === 1,
+                    entity.desiredActive === true ||
+                    entity.desiredActive === "true" ||
+                    entity.desiredActive === "1" ||
+                    entity.desiredActive === 1,
                 updatedAt: entity.updatedAt ?? null,
                 paths: entity.payloadJson
                     ? JSON.parse(entity.payloadJson).paths
@@ -39,7 +39,7 @@ async function listFlows() {
 
         return {flows};
     } catch (err) {
-        console.log.error("Error in flowList:", err);
+        console.error("Error in flowList:", err);
 
         return {
             status: 500,

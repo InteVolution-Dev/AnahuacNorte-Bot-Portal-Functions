@@ -3,6 +3,8 @@ const { app } = require("@azure/functions");
 // Third party imports
 const Ajv = require("ajv");
 const addFormats = require("ajv-formats");
+// Middleware for authentication
+const { withAuth } = require("../middleware/withAuth.js");
 // Local imports
 const { badRequest, ok } = require("../utils/response");
 const { patchFlow } = require("../services/flows/patchFlow.js");
@@ -22,7 +24,7 @@ app.http("flowPatch", {
     methods: ["PATCH"],
     authLevel: "anonymous",
 
-    handler: async (req, context) => {
+    handler: withAuth( async (req, context) => {
         try {
             // Validate request body
             const body = await req.json();
@@ -39,6 +41,6 @@ app.http("flowPatch", {
         } catch (err) {
             return badRequest("FLOW_PATCH_FAILED", { message: err.message });
         }
-    }
+    })
 });
 

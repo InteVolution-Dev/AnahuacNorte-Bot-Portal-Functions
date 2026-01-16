@@ -3,6 +3,8 @@ const { app } = require('@azure/functions');
 // Third party imports
 const Ajv = require("ajv");
 const addFormats = require("ajv-formats");
+// Middleware for authentication
+const { withAuth } = require("../middleware/withAuth.js");
 // Local imports
 const { ok, badRequest } = require("../utils/response");
 const { deleteFile } = require("../services/indexes/deleteFile");
@@ -23,7 +25,7 @@ app.http('delete-file', {
     route: 'indexes/delete-file',
     methods: ['DELETE'],
     authLevel: 'anonymous',
-    handler: async (request, context) => {
+    handler: withAuth( async (request, context) => {
         try {
             console.log("[DELETE FILE] Delete file request received");
             // Validate request body
@@ -41,5 +43,5 @@ app.http('delete-file', {
             context.error("[DELETE FILE] Error:", err);
             return badRequest("DELETE_FILE_FAILED", { message: err.message });
         }
-    }
+    })
 });

@@ -1,6 +1,7 @@
 // Azure Functions setup
 const { app } = require("@azure/functions");
-
+// Middleware for authentication
+const { withAuth } = require("../middleware/withAuth.js");
 // Local imports
 const { ok, badRequest } = require("../utils/response");
 const { deployToProduction } = require("../services/deploy/deployService");
@@ -11,7 +12,7 @@ app.http("deploy", {
     methods: ["POST"],
     authLevel: "anonymous",
 
-    handler: async (req, context) => {
+    handler: withAuth(async (req, context) => {
         console.log("[DEPLOY] Deploy request received");
 
         try {
@@ -23,5 +24,5 @@ app.http("deploy", {
 
             return badRequest("FLOW_PATCH_FAILED", { message: err.message });
         }
-    },
+    })
 });

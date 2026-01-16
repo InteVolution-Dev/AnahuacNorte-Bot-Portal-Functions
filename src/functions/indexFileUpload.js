@@ -1,5 +1,7 @@
 // Azure Functions imports
 const { app } = require('@azure/functions');
+// Middleware for authentication
+const { withAuth } = require("../middleware/withAuth.js");
 // Local imports
 const { ok, badRequest } = require("../utils/response");
 const { uploadFiles } = require("../services/indexes/uploadFiles");
@@ -11,7 +13,7 @@ app.http('upload-files', {
     route: 'indexes/upload-files',
     methods: ['POST'],
     authLevel: 'anonymous',
-    handler: async (request, context) => {
+    handler: withAuth( async (request, context) => {
         try {
             
             console.log("[UPLOAD FILES] Upload files request received");
@@ -45,5 +47,5 @@ app.http('upload-files', {
             context.error("[UPLOAD FILES] Error:", err);
             return badRequest("UPLOAD_FILES_FAILED", { message: err.message });
         }
-    }
+    })
 });

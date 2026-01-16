@@ -3,6 +3,8 @@ const { app } = require("@azure/functions");
 // Third party imports
 const Ajv = require("ajv");
 const addFormats = require("ajv-formats");
+// Middleware for authentication
+const { withAuth } = require("../middleware/withAuth.js");
 // Local imports
 const { ok, badRequest } = require("../utils/response");
 const { continueChat } = require("../services/playground/continueChat");
@@ -22,7 +24,7 @@ app.http("continue-chat", {
     methods: ["POST"],
     authLevel: "anonymous",
 
-    handler: async (req, context) => {
+    handler: withAuth( async (req, context) => {
         console.log("[CHAT CONTINUE] Continue chat request received");
         try {
             // Validate request body
@@ -41,5 +43,5 @@ app.http("continue-chat", {
                 message: err.message,
             });
         }
-    }
+    })
 });
