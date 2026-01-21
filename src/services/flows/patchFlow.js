@@ -15,6 +15,7 @@ async function savePatchedFlowToTableStorage(body) {
         const entity = {
             partitionKey: "flows",
             rowKey: body.storedFlowRowKey,
+            active: Boolean(body.active),
             desiredActive: Boolean(body.active),
             playgroundActive: Boolean(body.active),
             updatedAt: new Date().toISOString(),
@@ -125,4 +126,30 @@ async function patchFlow(body) {
 }
 
 
-module.exports = { patchFlow };
+// Función de prueba: solo actualiza en Table Storage sin tocar Foundry
+async function patchFlowStorageOnly(body) {
+    if (!body.storedFlowRowKey) {
+        throw new Error("rowKey (id) is required to update a flow");
+    }
+
+    // 1. Obtener flow desde Table Storage
+    const storedFlow = await getFromTable({
+        tableName: process.env.FLOWS_TABLE_NAME,
+        partitionKey: process.env.FLOWS_PARTITION,
+        rowKey: body.storedFlowRowKey
+    });
+
+    // 2. Actualizar flags en Table Storage
+    await savePatchedFlowToTableStorage(body);
+
+    return {
+        id: body.storedFlowRowKey,
+        active: body.active,
+        updated: true,
+        mode: "storage-only"
+    };
+}
+
+
+
+module.exports = { patchFlow, patchFlowStorageOnly };
