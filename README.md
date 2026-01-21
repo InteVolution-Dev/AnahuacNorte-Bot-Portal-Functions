@@ -183,6 +183,141 @@ Azure CLI requerido para interacción con recursos.
 * Este servicio debe proveer las herramientas en cada llamada al agente.
 * Mantener bajo el número de function tools mejora la precisión del modelo.
 
+## 🔐 Autenticación y Seguridad (SSO Microsoft Entra ID)
+
+Este servicio utiliza Single Sign-On (SSO) basado en Microsoft Entra ID (Azure AD) para autenticar a los usuarios del portal administrativo.
+
+La autenticación se realiza mediante Access Tokens JWT emitidos por Microsoft, los cuales son validados en el backend antes de permitir el acceso a cualquier endpoint protegido.
+
+🧩 Flujo de Autenticación
+
+El frontend autentica al usuario usando MSAL (Microsoft Authentication Library).
+
+Se obtiene un Access Token con el scope:
+
+`access_as_user`
+
+
+El token se envía al backend vía:
+
+`Authorization: Bearer <access_token>`
+
+
+El backend:
+
+* Verifica la firma criptográfica del token
+* Valida audiencia (aud)
+* Valida emisor (iss)
+* Valida tenant (tid)
+* Valida scope requerido
+* Aplica reglas adicionales de autorización (dominio + allowlist)
+
+### 🔑 Validación del Token (JWKS local)
+
+Para la validación criptográfica del token, el servicio utiliza un JWKS (JSON Web Key Set) almacenado localmente, en lugar de consumir el endpoint remoto de Microsoft en tiempo de ejecución.
+
+¿Por qué JWKS local?
+
+Esta decisión es intencional y arquitectónica, basada en:
+
+Estabilidad del servicio (sin dependencias de red en runtime)
+
+Evitar problemas de TLS / certificados en entornos locales y productivos
+
+Reducción de latencia
+
+Comportamiento determinístico y fácil de depurar
+
+Tráfico bajo y entorno administrativo controlado
+
+Microsoft rota sus claves con poca frecuencia y mantiene múltiples claves activas simultáneamente, lo que permite que un JWKS local sea válido por largos periodos de tiempo.
+
+### 📂 Implementación
+
+El archivo JWKS se almacena localmente en el proyecto:
+
+`src/middleware/jwks.local.json`
+
+Y se utiliza con la librería jose mediante:
+
+`createLocalJWKSet()`
+
+Ejemplo simplificado:
+
+```
+const { jwtVerify, createLocalJWKSet } = require("jose");
+const jwks = require("./jwks.local.json");
+
+const JWKS = createLocalJWKSet(jwks);
+
+const { payload } = await jwtVerify(token, JWKS, {
+  audience: `api://${CLIENT_ID}`,
+  issuer: `https://sts.windows.net/${TENANT_ID}/`,
+});
+```
+
+### 🔄 Rotación de Claves (Operación)
+
+En caso de que Microsoft rote una clave y el backend reciba un token firmado con un kid no presente en el JWKS local, la verificación fallará de forma explícita.
+
+Procedimiento esperado:
+
+1. Regenerar el JWKS desde el endpoint oficial:
+
+`https://login.microsoftonline.com/<TENANT_ID>/discovery/v2.0/keys`
+
+El comando desde CMD sería similar a este:
+
+```
+url -k https://login.microsoftonline.com/<TENANT_ID>/discovery/v2.0/keys > ./src/middleware/jwks.local.json
+```
+
+**NOTA**: No olvides actualizar el TENANT_ID con el valor correspondiente.
+
+2. Actualizar jwks.local.json
+
+**NOTA**: Asegurate de actualizar el archivo y que el contenido sea algo válido.
+
+3. Desplegar el cambio
+
+Este escenario es poco frecuente y aceptable para un portal administrativo.
+
+### 🛡️ Autorización adicional (Defensa en profundidad)
+
+Además de la validación del token, el backend aplica capas adicionales de autorización:
+
+1️⃣ Dominio permitido
+
+Solo se permite acceso a usuarios con correo del dominio:
+
+`@anahuac.mx`
+
+2️⃣ Allowlist de usuarios administradores
+
+Existe una tabla dedicada en Azure Table Storage que define explícitamente qué usuarios pueden acceder al portal administrativo.
+
+* PartitionKey: allowed-users
+* RowKey: email normalizado del usuario
+
+Cada request autenticado valida que el usuario esté presente en esta tabla.
+
+Esto evita que:
+
+* Alumnos
+* Padres de familia
+* Usuarios no administrativos
+
+puedan acceder al portal aunque pertenezcan al tenant.
+
+### 🧠 Principio aplicado
+
+Este diseño sigue el principio de:
+
+`Autenticación ≠ Autorización`
+
+Microsoft Entra ID valida quién eres.
+El backend valida si puedes estar aquí.
+
 ## 📜 Licencia
 Propietario: Intevolution
 Desarrollado por: Daniel Zanabria
