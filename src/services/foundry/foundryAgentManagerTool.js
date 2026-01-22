@@ -115,8 +115,8 @@ async function updateAgentDefinition(agentName, definition) {
     try {
         return await projectClient.agents.update(agentName, definition);
     } catch (err) {
-        console.error("ERROR AL ACTUALIZAR DEFINICIÓN DEL AGENTE:");
-        console.error(err);
+        console.log("ERROR AL ACTUALIZAR DEFINICIÓN DEL AGENTE:");
+        console.log(err);
         throw err;
     }
 }
