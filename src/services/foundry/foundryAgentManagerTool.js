@@ -115,10 +115,31 @@ async function updateAgentDefinition(agentName, definition) {
     try {
         return await projectClient.agents.update(agentName, definition);
     } catch (err) {
-        console.log("ERROR AL ACTUALIZAR DEFINICIÓN DEL AGENTE:");
-        console.log(err);
+        console.error("ERROR AL ACTUALIZAR DEFINICIÓN DEL AGENTE:");
+        console.error(err);
         throw err;
     }
+}
+
+
+// Función auxiliar para actualizar el system prompt en el agente de Foundry
+async function updateSystemPromptAgent(agentName, promptText) {
+    // Primero obtenemos el proyecto de Foundry
+    const agent = await getAgentByName(agentName);
+    const latestDef = agent.versions.latest.definition;
+    // Ahora persistimos el nuevo flujo en el cliente de Foundry (esto CREA una nueva versión)
+    const updatedAgent = await updateAgentDefinition(
+        agentName,
+        {
+            ...latestDef,
+            instructions: promptText.trim()
+        }
+    );
+
+    return {
+        updated: true,
+        updatedAt: new Date().toISOString()
+    };
 }
 
 
@@ -317,6 +338,7 @@ module.exports = {
     createResponseInConversation,
     buildOpenApiTool,
     updateAgentDefinition,
+    updateSystemPromptAgent,
     configureAgent,
     deleteOpenAPITool,
     updateOpenAPITool,

@@ -1,14 +1,13 @@
 // Azure imports
 const { BlobServiceClient } = require("@azure/storage-blob");
 // Local imports
-const { getAgentByName, updateAgentDefinition } = require("../foundry/foundryAgentManagerTool");
+const { updateSystemPromptAgent } = require("../foundry/foundryAgentManagerTool");
 
 
 
 // CONSTANTES ==============================
 const CONFIG_CONTAINER = process.env.CONFIG_CONTAINER;
 const SYSTEM_PROMPT_BLOB = process.env.SYSTEM_PROMPT_BLOB;
-const AGENT_NAME = process.env.FOUNDRY_AGENT_NAME;
 
 
 
@@ -21,27 +20,6 @@ const blobServiceClient = BlobServiceClient.fromConnectionString(
 
 
 // FUNCIONES =========================================
-// Función auxiliar para actualizar el system prompt en el agente de Foundry
-async function updateSystemPromptAgent(promptText) {
-    // Primero obtenemos el proyecto de Foundry
-    const agent = await getAgentByName(AGENT_NAME);
-    const latestDef = agent.versions.latest.definition;
-    // Ahora persistimos el nuevo flujo en el cliente de Foundry (esto CREA una nueva versión)
-    const updatedAgent = await updateAgentDefinition(
-        AGENT_NAME,
-        {
-            ...latestDef,
-            instructions: promptText.trim()
-        }
-    );
-
-    return {
-        updated: true,
-        updatedAt: new Date().toISOString()
-    };
-}
-
-
 // Función auxiliar para actualizar el system prompt en su blob container
 async function updateSystemPromptBlob(promptText) {
     const containerClient = blobServiceClient.getContainerClient(CONFIG_CONTAINER);
@@ -77,7 +55,7 @@ async function updateSystemPromptBlob(promptText) {
 async function updateSystemPrompt(body) {
     const { promptText } = body;  // promptTest ya debe ser un string por validacion con AJV
     
-    const updatedAgent = await updateSystemPromptAgent(promptText);
+    const updatedAgent = await updateSystemPromptAgent(process.env.FOUNDRY_AGENT_NAME, promptText);
     
     const response = await updateSystemPromptBlob(promptText);
     
