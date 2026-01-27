@@ -1,14 +1,23 @@
 // Third party imports
 const { DefaultAzureCredential } = require("@azure/identity");
 const { AIProjectClient } = require("@azure/ai-projects");
+// Local imports
+const { ExplicitTokenCredential } = require("./foundryExplicitCredential");
 
-// Configuración del cliente de Foundry y Table Storage
-const credential = new DefaultAzureCredential();
+
+// CONSTANTES Y CONFIGURACIONES ==================
+const FOUNDRY_RESOURCE_ACCESS_TOKEN = process.env.FOUNDRY_RESOURCE_ACCESS_TOKEN;
+console.log("[FOUNDY] Using resource access token:",
+    Boolean(FOUNDRY_RESOURCE_ACCESS_TOKEN)
+);
+const credential = FOUNDRY_RESOURCE_ACCESS_TOKEN
+    ? new ExplicitTokenCredential(FOUNDRY_RESOURCE_ACCESS_TOKEN)
+    : new DefaultAzureCredential();
+
 const projectClient = new AIProjectClient(
     process.env.FOUNDRY_ENDPOINT,
     credential
 );
-
 
 
 // FUNCIONES ===============================================
