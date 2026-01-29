@@ -10,7 +10,11 @@ const FOUNDRY_RESOURCE_ACCESS_TOKEN = process.env.FOUNDRY_RESOURCE_ACCESS_TOKEN;
 console.log("[FOUNDY] Using resource access token:",
     Boolean(FOUNDRY_RESOURCE_ACCESS_TOKEN)
 );
-const credential = new DefaultAzureCredential();
+// 
+const credential = FOUNDRY_RESOURCE_ACCESS_TOKEN
+    ? new ExplicitTokenCredential(FOUNDRY_RESOURCE_ACCESS_TOKEN)
+    : new DefaultAzureCredential();
+
 const projectClient = new AIProjectClient(
     process.env.FOUNDRY_ENDPOINT,
     credential
