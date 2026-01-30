@@ -16,6 +16,7 @@ app.http("agentGetTest", {
         try {
             const agentName = process.env.FOUNDRY_AGENT_NAME;
 
+
             const agent = await getAgentByName(agentName);
 
             return ok({
