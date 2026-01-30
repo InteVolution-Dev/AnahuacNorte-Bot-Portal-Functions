@@ -16,7 +16,7 @@ async function listIndexedFiles({ indexId }) {
 
     const filter = [
         `PartitionKey eq '${indexId}'`,
-        `(status eq 'INDEXED' or status eq 'FAILED')`
+        `(status eq 'INDEXED' or status eq 'FAILED' or status eq 'DEPLOYED')`
     ].join(" and ");
 
     const entities = await queryTable({
