@@ -4,10 +4,10 @@ const { jwtVerify, createLocalJWKSet } = require("jose");
 
 // === CONFIG =================================================
 const TENANT_ID = process.env.AZURE_TENANT_ID;
-const CLIENT_ID = process.env.AZURE_CLIENT_ID;
+const CLIENT_ID = process.env.AZURE_SSO_CLIENT_ID;
 
 if (!TENANT_ID || !CLIENT_ID) {
-    throw new Error("Missing AZURE_TENANT_ID or AZURE_CLIENT_ID");
+    throw new Error("Missing AZURE_TENANT_ID or AZURE_SSO_CLIENT_ID");
 }
 
 // === JWKS LOCAL =============================================
